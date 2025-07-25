@@ -102,10 +102,10 @@ export default async function handler(req, res) {
     const body = req.body;
 
     // Verificação de autenticação com chave secreta
-    const zentraSecret = process.env.ZENTRA_WEBHOOK_SECRET || 'SUA_SECRET_KEY_DA_ZENTRA';
+    const zentraSecret = 'sk_ab923f7fd51de54a45f835645cae6c73c9ac37e65e28b79fd7d13efb030d74c6cebab32534d07a5f80a871196121732a129ef02e3732504b1a56b8d1972ebbf1';
     const tokenRecebido = req.headers['api-secret'] || req.headers['authorization'];
 
-    if (zentraSecret !== 'SUA_SECRET_KEY_DA_ZENTRA' && tokenRecebido !== zentraSecret) {
+    if (zentraSecret && tokenRecebido !== zentraSecret) {
       console.log('❌ Token inválido recebido:', tokenRecebido);
       return res.status(401).json({ 
         error: 'Token inválido',

@@ -397,6 +397,15 @@ export class TrackingSystem {
         this.showElement('trackingResults');
     }
 
+    generateTrackingData() {
+        if (!this.currentCPF || !this.userData) return;
+        
+        // Gerar dados de rastreamento usando o TrackingGenerator
+        this.trackingData = TrackingGenerator.generateTrackingData(this.currentCPF, this.userData);
+        
+        console.log('📦 Dados de rastreamento gerados:', this.trackingData);
+    }
+
     startAutomatedTracking() {
         console.log('🤖 Iniciando sistema de rastreamento automatizado');
         
@@ -561,6 +570,7 @@ export class TrackingSystem {
                 liberationButton.style.animation = 'pulse 2s infinite, glow 2s ease-in-out';
                 liberationButton.style.boxShadow = '0 0 20px rgba(255, 107, 53, 0.8)';
                 this.startAutomatedTracking();
+                setTimeout(() => {
                     liberationButton.style.animation = 'pulse 2s infinite';
                     liberationButton.style.boxShadow = '0 4px 15px rgba(255, 107, 53, 0.4)';
                 }, 6000);

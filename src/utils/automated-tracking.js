@@ -14,7 +14,7 @@ export class AutomatedTrackingSystem {
         return [
             {
                 id: 1,
-                date: '2024-07-23',
+                date: '23 de jul.',
                 time: '08:21',
                 title: 'Seu pedido foi criado',
                 description: 'Seu pedido foi criado',
@@ -23,7 +23,7 @@ export class AutomatedTrackingSystem {
             },
             {
                 id: 2,
-                date: '2024-07-23',
+                date: '23 de jul.',
                 time: '22:49',
                 title: 'Preparando para envio',
                 description: 'O seu pedido está sendo preparado para envio',
@@ -32,7 +32,7 @@ export class AutomatedTrackingSystem {
             },
             {
                 id: 3,
-                date: '2024-07-24',
+                date: '24 de jul.',
                 time: '14:26',
                 title: 'Pedido enviado',
                 description: '[China] O vendedor enviou seu pedido',
@@ -41,7 +41,7 @@ export class AutomatedTrackingSystem {
             },
             {
                 id: 4,
-                date: '2024-07-24',
+                date: '24 de jul.',
                 time: '11:24',
                 title: 'Centro de triagem',
                 description: '[China] O pedido chegou ao centro de triagem de Shenzhen',
@@ -50,7 +50,7 @@ export class AutomatedTrackingSystem {
             },
             {
                 id: 5,
-                date: '2024-07-24',
+                date: '24 de jul.',
                 time: '16:33',
                 title: 'Centro logístico',
                 description: '[China] Pedido saiu do centro logístico de Shenzhen',
@@ -59,7 +59,7 @@ export class AutomatedTrackingSystem {
             },
             {
                 id: 6,
-                date: '2024-07-24',
+                date: '24 de jul.',
                 time: '21:09',
                 title: 'Trânsito internacional',
                 description: '[China] Coletado. O pedido está em trânsito internacional',
@@ -68,7 +68,7 @@ export class AutomatedTrackingSystem {
             },
             {
                 id: 7,
-                date: '2024-07-24',
+                date: '24 de jul.',
                 time: '09:50',
                 title: 'Liberado para exportação',
                 description: '[China] O pedido foi liberado na alfândega de exportação',
@@ -77,7 +77,7 @@ export class AutomatedTrackingSystem {
             },
             {
                 id: 8,
-                date: '2024-07-24',
+                date: '24 de jul.',
                 time: '05:15',
                 title: 'Saiu da origem',
                 description: 'Pedido saiu da origem: Shenzhen',
@@ -86,7 +86,7 @@ export class AutomatedTrackingSystem {
             },
             {
                 id: 9,
-                date: '2024-07-24',
+                date: '24 de jul.',
                 time: '15:20',
                 title: 'Chegou no Brasil',
                 description: 'Pedido chegou no Brasil',
@@ -95,7 +95,7 @@ export class AutomatedTrackingSystem {
             },
             {
                 id: 10,
-                date: '2024-07-25',
+                date: '25 de jul.',
                 time: '14:28',
                 title: 'Centro de distribuição',
                 description: 'Pedido em trânsito para CURITIBA/PR',
@@ -104,7 +104,7 @@ export class AutomatedTrackingSystem {
             },
             {
                 id: 11,
-                date: '2024-07-25',
+                date: '25 de jul.',
                 time: '15:28',
                 title: 'Alfândega de importação',
                 description: 'Pedido chegou na alfândega de importação: CURITIBA/PR',
@@ -231,13 +231,7 @@ export class AutomatedTrackingSystem {
         item.style.transform = 'translateY(20px)';
         item.style.transition = 'all 0.5s ease';
         
-        const [day, month] = step.date.split('-').slice(1);
-        const monthNames = {
-            '01': 'jan', '02': 'fev', '03': 'mar', '04': 'abr',
-            '05': 'mai', '06': 'jun', '07': 'jul', '08': 'ago',
-            '09': 'set', '10': 'out', '11': 'nov', '12': 'dez'
-        };
-        const dateStr = `${day} de ${monthNames[month]}`;
+        const dateStr = step.date; // Já vem formatado como "23 de jul."
         
         let buttonHtml = '';
         if (step.needsLiberation && step.completed) {
@@ -256,7 +250,7 @@ export class AutomatedTrackingSystem {
                     <span class="time">${step.time}</span>
                 </div>
                 <div class="timeline-text">
-                    <p>${step.isChina ? `<span class="china-tag">[China]</span>` : ''}${step.description}</p>
+                    <p>${step.description}</p>
                     ${buttonHtml}
                 </div>
             </div>

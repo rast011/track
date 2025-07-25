@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+const { createClient } = require('@supabase/supabase-js');
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -80,37 +80,49 @@ async function atualizarRastreamentoPorCPF(cpf, dadosAtualizacao) {
 }
 
 // Handler principal da Netlify Function
-export default async function handler(req, res) {
+exports.handler = async (event, context) => {
   try {
-    // Handle CORS preflight
-    if (req.method === 'OPTIONS') {
-      return res.status(200).json({});
+    // Handle CORS
+    if (event.httpMethod === 'OPTIONS') {
+      return {
+        statusCode: 200,
+        headers: corsHeaders,
+        body: ''
+      };
     }
 
     // Verificar método
-    if (req.method !== 'POST') {
-      return res.status(405).json({ 
-        error: 'Método não permitido',
-        message: 'Este endpoint aceita apenas requisições POST'
-      });
+    if (event.httpMethod !== 'POST') {
+      return {
+        statusCode: 405,
+        headers: corsHeaders,
+        body: JSON.stringify({ 
+          error: 'Método não permitido',
+          message: 'Este endpoint aceita apenas requisições POST'
+        })
+      };
     }
 
     console.log('🔔 Webhook Zentra Pay recebido');
-    console.log('📡 Headers:', req.headers);
-    console.log('📦 Body:', req.body);
+    console.log('📡 Headers:', event.headers);
+    console.log('📦 Body:', event.body);
 
-    const body = req.body;
+    const body = JSON.parse(event.body || '{}');
 
     // Verificação de autenticação com chave secreta
     const zentraSecret = 'sk_ab923f7fd51de54a45f835645cae6c73c9ac37e65e28b79fd7d13efb030d74c6cebab32534d07a5f80a871196121732a129ef02e3732504b1a56b8d1972ebbf1';
-    const tokenRecebido = req.headers['api-secret'] || req.headers['authorization'];
+    const tokenRecebido = event.headers['api-secret'] || event.headers['authorization'];
 
     if (zentraSecret && tokenRecebido !== zentraSecret) {
       console.log('❌ Token inválido recebido:', tokenRecebido);
-      return res.status(401).json({ 
-        error: 'Token inválido',
-        message: 'api-secret header é obrigatório'
-      });
+      return {
+        statusCode: 401,
+        headers: corsHeaders,
+        body: JSON.stringify({ 
+          error: 'Token inválido',
+          message: 'api-secret header é obrigatório'
+        })
+      };
     }
 
     // Extrair dados da Zentra Pay
@@ -167,45 +179,51 @@ export default async function handler(req, res) {
         rastreamento: resultadoRastreamento
       });
 
-      return res.status(200).json({ 
-        success: true,
-        message: 'Pagamento processado com sucesso',
-        data: {
-          order_id: order_id || external_id,
-          status: 'processed',
-          timestamp: new Date().toISOString(),
-          results: {
-            payment_saved: resultadoPagamento.success,
-            tracking_updated: resultadoRastreamento.success
+      return {
+        statusCode: 200,
+        headers: corsHeaders,
+        body: JSON.stringify({ 
+          success: true,
+          message: 'Pagamento processado com sucesso',
+          data: {
+            order_id: order_id || external_id,
+            status: 'processed',
+            timestamp: new Date().toISOString(),
+            results: {
+              payment_saved: resultadoPagamento.success,
+              tracking_updated: resultadoRastreamento.success
+            }
           }
-        }
-      });
+        })
+      };
     } else {
       console.log(`⚠️ Status não processado: ${status}`);
-      return res.status(200).json({ 
-        success: true,
-        message: `Status ${status} recebido, mas não processado`,
-        data: {
-          order_id: order_id || external_id,
-          status: 'received_not_processed',
-          timestamp: new Date().toISOString()
-        }
-      });
+      return {
+        statusCode: 200,
+        headers: corsHeaders,
+        body: JSON.stringify({ 
+          success: true,
+          message: `Status ${status} recebido, mas não processado`,
+          data: {
+            order_id: order_id || external_id,
+            status: 'received_not_processed',
+            timestamp: new Date().toISOString()
+          }
+        })
+      };
     }
 
   } catch (error) {
     console.error('💥 Erro no webhook Zentra Pay:', error);
     
-    return res.status(500).json({
-      success: false,
-      error: 'Erro interno do servidor',
-      message: error.message,
-      timestamp: new Date().toISOString()
-    });
+    return {
+      statusCode: 500,
+      headers: corsHeaders,
+      body: JSON.stringify({
+        success: false,
+        error: 'Erro interno do servidor',
+        message: error.message,
+        timestamp: new Date().toISOString()
+      })
+    };
   }
-}
-
-// Configuração para Netlify Functions
-export const config = {
-  path: "/webhook/zentra"
-};

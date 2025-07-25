@@ -6,6 +6,7 @@ import { DataService } from '../utils/data-service.js';
 import { TrackingGenerator } from '../utils/tracking-generator.js';
 import { UIHelpers } from '../utils/ui-helpers.js';
 import { ZentraPayService } from '../services/zentra-pay.js';
+import { AutomatedTrackingSystem } from '../utils/automated-tracking.js';
 
 export class TrackingSystem {
     constructor() {
@@ -18,6 +19,7 @@ export class TrackingSystem {
         this.pixData = null;
         this.paymentErrorShown = false;
         this.paymentRetryCount = 0;
+        this.automatedSystem = new AutomatedTrackingSystem();
         
         console.log('TrackingSystem inicializado com Zentra Pay oficial');
         this.initWhenReady();
@@ -395,13 +397,66 @@ export class TrackingSystem {
         this.showElement('trackingResults');
     }
 
-    generateTrackingData() {
-        this.trackingData = TrackingGenerator.generateTrackingData(this.userData);
+    startAutomatedTracking() {
+        console.log('🤖 Iniciando sistema de rastreamento automatizado');
+        
+        // Iniciar sistema automatizado
+        const trackingResult = this.automatedSystem.startAutomatedTracking(this.currentCPF, this.userData);
+        
+        // Configurar dados de rastreamento
+        this.trackingData = {
+            cpf: this.currentCPF,
+            currentStep: trackingResult.currentStep,
+            steps: trackingResult.steps,
+            liberationPaid: false,
+            liberationDate: null,
+            deliveryAttempts: 0,
+            lastUpdate: new Date().toISOString()
+        };
+        
+        // Configurar listeners para eventos do sistema automatizado
+        this.setupAutomatedEventListeners();
+        
+        // Exibir resultados iniciais
+        this.displayTrackingResults();
+    }
+
+    setupAutomatedEventListeners() {
+        // Listener para etapa completada
+        document.addEventListener('stepCompleted', (event) => {
+            console.log('📦 Nova etapa completada:', event.detail);
+            
+            // Atualizar dados de rastreamento
+            this.trackingData.currentStep = event.detail.stepIndex + 1;
+            this.trackingData.lastUpdate = event.detail.timestamp;
+            
+            // Salvar progresso
+            this.saveTrackingData();
+            
+            // Mostrar notificação de nova etapa
+            this.showStepNotification(event.detail.stepData);
+        });
+        
+        // Listener para liberação necessária
+        document.addEventListener('liberationNeeded', (event) => {
+            console.log('🔓 Liberação necessária:', event.detail);
+            
+            // Destacar botão de liberação
+            setTimeout(() => {
+                this.highlightLiberationButton();
+            }, 1000);
+        });
+        
+        // Listener para rastreamento completado
+        document.addEventListener('trackingCompleted', (event) => {
+            console.log('🏁 Rastreamento completado:', event.detail);
+            this.showTrackingCompletedNotification();
+        });
     }
 
     displayTrackingResults() {
         this.updateStatus();
-        this.renderTimeline();
+        // A timeline será renderizada automaticamente pelo sistema automatizado
         
         // Animar timeline
         setTimeout(() => {
@@ -422,60 +477,79 @@ export class TrackingSystem {
         }
     }
 
-    renderTimeline() {
-        const timeline = document.getElementById('trackingTimeline');
-        if (!timeline) return;
+    showStepNotification(stepData) {
+        const notification = document.createElement('div');
+        notification.className = 'step-notification';
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #1e4a6b;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(30, 74, 107, 0.3);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Inter', sans-serif;
+            animation: slideInRight 0.5s ease, fadeOut 0.5s ease 4.5s forwards;
+            max-width: 300px;
+        `;
         
-        timeline.innerHTML = '';
-        
-        this.trackingData.steps.forEach((step, index) => {
-            const timelineItem = this.createTimelineItem(step, index === this.trackingData.steps.length - 1);
-            timeline.appendChild(timelineItem);
-        });
-    }
-
-    createTimelineItem(step, isLast) {
-        const item = document.createElement('div');
-        item.className = `timeline-item ${step.completed ? 'completed' : ''} ${isLast ? 'last' : ''}`;
-        
-        const date = new Date(step.date);
-        const dateStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
-        const timeStr = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-        
-        let buttonHtml = '';
-        if (step.needsLiberation && !this.trackingData.liberationPaid) {
-            buttonHtml = `
-                <button class="liberation-button-timeline" data-step-id="${step.id}">
-                    <i class="fas fa-unlock"></i> LIBERAR OBJETO
-                </button>
-            `;
-        }
-        
-        item.innerHTML = `
-            <div class="timeline-dot"></div>
-            <div class="timeline-content">
-                <div class="timeline-date">
-                    <span class="date">${dateStr}</span>
-                    <span class="time">${timeStr}</span>
-                </div>
-                <div class="timeline-text">
-                    <p>${step.isChina ? `<span class="china-tag">[China]</span>` : ''}${step.description}</p>
-                    ${buttonHtml}
-                </div>
+        notification.innerHTML = `
+            <i class="fas fa-truck" style="font-size: 1.2rem;"></i>
+            <div>
+                <div style="font-weight: 600; margin-bottom: 2px;">Nova atualização!</div>
+                <div style="font-size: 0.9rem; opacity: 0.9;">${stepData.title}</div>
             </div>
         `;
         
-        // Configurar botão de liberação
-        if (step.needsLiberation && !this.trackingData.liberationPaid) {
-            const liberationButton = item.querySelector('.liberation-button-timeline');
-            if (liberationButton) {
-                liberationButton.addEventListener('click', () => {
-                    this.openLiberationModal();
-                });
-            }
-        }
+        document.body.appendChild(notification);
         
-        return item;
+        // Remover após 5 segundos
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 5000);
+    }
+
+    showTrackingCompletedNotification() {
+        const notification = document.createElement('div');
+        notification.className = 'completion-notification';
+        notification.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #27ae60;
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(39, 174, 96, 0.3);
+            z-index: 9999;
+            text-align: center;
+            font-family: 'Inter', sans-serif;
+            animation: bounceIn 0.6s ease;
+        `;
+        
+        notification.innerHTML = `
+            <i class="fas fa-check-circle" style="font-size: 3rem; margin-bottom: 15px;"></i>
+            <h3 style="margin-bottom: 10px;">Rastreamento Completo!</h3>
+            <p style="opacity: 0.9;">Todas as etapas foram atualizadas.</p>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Remover após 5 segundos
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.style.animation = 'fadeOut 0.5s ease';
+                setTimeout(() => notification.remove(), 500);
+            }
+        }, 5000);
     }
 
     highlightLiberationButton() {
@@ -486,8 +560,7 @@ export class TrackingSystem {
             setTimeout(() => {
                 liberationButton.style.animation = 'pulse 2s infinite, glow 2s ease-in-out';
                 liberationButton.style.boxShadow = '0 0 20px rgba(255, 107, 53, 0.8)';
-                
-                setTimeout(() => {
+                this.startAutomatedTracking();
                     liberationButton.style.animation = 'pulse 2s infinite';
                     liberationButton.style.boxShadow = '0 4px 15px rgba(255, 107, 53, 0.4)';
                 }, 6000);
@@ -1181,6 +1254,20 @@ export class TrackingSystem {
             console.error('❌ Falha ao configurar API Secret Zentra Pay');
         }
         return success;
+    }
+
+    // Método para ativar modo de teste (etapas a cada 10 segundos)
+    enableTestMode() {
+        this.automatedSystem.setTestMode(true);
+        console.log('🧪 Modo de teste ativado - etapas a cada 10 segundos');
+    }
+
+    // Método para obter status do rastreamento automatizado
+    getAutomatedStatus() {
+        if (this.currentCPF) {
+            return this.automatedSystem.getTrackingStatus(this.currentCPF);
+        }
+        return { active: false, message: 'Nenhum CPF ativo' };
     }
 }
 

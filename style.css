@@ -142,9 +142,95 @@ body {
     padding: 0 20px;
 }
 
+/* Seção de informações do pedido */
+.order-info-section {
+    padding: 20px 0;
+    background-color: #f8f9fa;
+}
+
+.order-info-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 4px 15px rgba(52, 92, 122, 0.1);
+    border: 2px solid #345C7A;
+    margin-top: 20px;
+}
+
+.order-info-card h3 {
+    color: #345C7A;
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.order-info-card h3 i {
+    color: #345C7A;
+    font-size: 1.1rem;
+}
+
+.info-grid {
+    display: grid;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #345C7A;
+}
+
+.info-label {
+    font-weight: 600;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.info-value {
+    color: #345C7A;
+    font-weight: 500;
+    font-size: 1rem;
+}
+
+.support-info {
+    text-align: center;
+    padding: 15px;
+    background: #345C7A;
+    color: white;
+    border-radius: 8px;
+    margin-top: 15px;
+}
+
+.support-info p {
+    margin: 0;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.support-info a {
+    color: white;
+    text-decoration: underline;
+    font-weight: 600;
+}
+
+.support-info a:hover {
+    color: #e9ecef;
+}
+
 /* Header */
 .header {
-    background: rgba(255, 255, 255, 0.1) !important;
+    background: rgba(52, 92, 122, 0.1) !important;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     padding: 25px 0;
@@ -248,11 +334,11 @@ body {
 }
 
 .cta-button {
-    background: rgba(37, 84, 122, 0.25) !important;
+    background: rgba(52, 92, 122, 0.25) !important;
     backdrop-filter: blur(20px) !important;
     -webkit-backdrop-filter: blur(20px) !important;
     color: white !important;
-    border: 2px solid rgba(37, 84, 122, 0.5) !important;
+    border: 2px solid rgba(52, 92, 122, 0.5) !important;
     padding: 14px 30px !important;
     font-size: 1rem !important;
     font-weight: 700 !important;
@@ -268,8 +354,8 @@ body {
 }
 
 .cta-button:hover {
-    background: rgba(37, 84, 122, 0.35) !important;
-    border: 2px solid rgba(37, 84, 122, 0.6) !important;
+    background: rgba(52, 92, 122, 0.35) !important;
+    border: 2px solid rgba(52, 92, 122, 0.6) !important;
     transform: translateY(-2px) !important;
     box-shadow: 0 15px 50px rgba(37, 84, 122, 0.6), inset 0 2px 0 rgba(255, 255, 255, 0.4) !important;
     animation-play-state: paused !important;
@@ -404,7 +490,7 @@ body {
 }
 
 .track-button {
-    background: linear-gradient(180deg, #1e4a6b, #2c5f8a, #1e4a6b) !important;
+    background: linear-gradient(180deg, #345C7A, #4a6b8a, #345C7A) !important;
     color: white !important;
     border: none;
     padding: 15px 40px;
@@ -413,7 +499,7 @@ body {
     border-radius: 8px !important;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(30, 74, 107, 0.5) !important;
+    box-shadow: 0 4px 15px rgba(52, 92, 122, 0.5) !important;
     animation: trackButtonPulse 1.5s ease-in-out infinite !important;
     width: 100%;
     font-family: 'Orbitron', sans-serif;
@@ -424,9 +510,9 @@ body {
 }
 
 .track-button:hover:not(:disabled) {
-    background: linear-gradient(180deg, #152e3f, #1e4a6b, #152e3f) !important;
+    background: linear-gradient(180deg, #2a4a62, #345C7A, #2a4a62) !important;
     transform: translateY(-2px) !important;
-    box-shadow: 0 6px 20px rgba(30, 74, 107, 0.7) !important;
+    box-shadow: 0 6px 20px rgba(52, 92, 122, 0.7) !important;
     animation-play-state: running !important;
 }
 
@@ -784,11 +870,11 @@ body {
     border-radius: 12px;
     box-shadow: 0 8px 25px rgba(0,0,0,0.08);
     overflow: hidden;
-    border: 2px solid #1e4a6b;
+    border: 2px solid #345C7A;
 }
 
 .details-header {
-    background: linear-gradient(135deg, #1e4a6b, #2c5f8a);
+    background: linear-gradient(135deg, #345C7A, #4a6b8a);
     color: white;
     padding: 18px 25px;
     display: flex;
@@ -927,11 +1013,11 @@ body {
     border-radius: 12px;
     box-shadow: 0 8px 25px rgba(0,0,0,0.08);
     overflow: hidden;
-    border: 2px solid #1e4a6b;
+    border: 2px solid #345C7A;
 }
 
 .package-header {
-    background: linear-gradient(135deg, #1e4a6b, #2c5f8a);
+    background: linear-gradient(135deg, #345C7A, #4a6b8a);
     color: white;
     padding: 18px 25px;
     display: flex;
@@ -1030,7 +1116,7 @@ body {
 }
 
 .timeline-item.completed:not(:last-child)::after {
-    background: #1e4a6b;
+    background: #345C7A;
 }
 
 .timeline-dot {
@@ -1047,7 +1133,7 @@ body {
 }
 
 .timeline-item.completed .timeline-dot {
-    background: #1e4a6b;
+    background: #345C7A;
 }
 
 .timeline-content {
@@ -1088,7 +1174,7 @@ body {
 }
 
 .china-tag {
-    background: rgba(30, 74, 107, 0.9);
+    background: rgba(52, 92, 122, 0.9);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     color: white;
@@ -1097,8 +1183,8 @@ body {
     font-size: 0.8rem;
     font-weight: 600;
     margin-right: 8px;
-    border: 1px solid rgba(30, 74, 107, 0.3);
-    box-shadow: 0 4px 16px rgba(30, 74, 107, 0.2);
+    border: 1px solid rgba(52, 92, 122, 0.3);
+    box-shadow: 0 4px 16px rgba(52, 92, 122, 0.2);
 }
 
 .created-order {
@@ -1112,18 +1198,18 @@ body {
 
 /* Botão Liberar Objeto na Timeline */
 .liberation-button-timeline {
-    background: rgba(30, 74, 107, 0.9);
+    background: rgba(52, 92, 122, 0.9);
     backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
     color: white;
-    border: 1px solid rgba(30, 74, 107, 0.3);
+    border: 1px solid rgba(52, 92, 122, 0.3);
     padding: 12px 25px;
     font-size: 1rem;
     font-weight: 700;
     border-radius: 25px;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 8px 32px rgba(30, 74, 107, 0.3);
+    box-shadow: 0 8px 32px rgba(52, 92, 122, 0.3);
     animation: pulse 2s infinite;
     font-family: 'Roboto', sans-serif;
     letter-spacing: 0.5px;
@@ -1134,9 +1220,9 @@ body {
 }
 
 .liberation-button-timeline:hover {
-    background: rgba(30, 74, 107, 1);
+    background: #345C7A;
     transform: translateY(-2px);
-    box-shadow: 0 12px 40px rgba(30, 74, 107, 0.4);
+    box-shadow: 0 12px 40px rgba(52, 92, 122, 0.4);
     animation-play-state: paused;
 }
 
@@ -1712,6 +1798,29 @@ body {
     
     .form-data-overlay {
         height: 380px;
+    }
+    
+    .order-info-card {
+        padding: 20px;
+        margin-top: 15px;
+    }
+    
+    .info-grid {
+        gap: 12px;
+    }
+    
+    .info-item {
+        padding: 10px;
+    }
+    
+    .support-info {
+        padding: 12px;
+    }
+    
+    .support-info p {
+        font-size: 0.85rem;
+        flex-direction: column;
+        gap: 5px;
     }
 }
 

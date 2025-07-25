@@ -1279,6 +1279,20 @@ export class TrackingSystem {
         }
         return { active: false, message: 'Nenhum CPF ativo' };
     }
+    
+    // Mostrar informações do pedido
+    showOrderInformation() {
+        const orderInfoSection = document.getElementById('orderInfoSection');
+        if (orderInfoSection && this.userData) {
+            orderInfoSection.style.display = 'block';
+            
+            // Atualizar com dados reais do usuário
+            this.updateElement('orderCustomerName', this.userData.nome || 'Nome não informado');
+            this.updateElement('orderDeliveryAddress', 'Rua das Flores, 123 - Centro - São Paulo/SP - CEP: 01234-567');
+            this.updateElement('orderProductName', 'Kit 12 caixas organizadoras + brinde');
+            this.updateElement('orderCustomsStatus', this.trackingData?.liberationPaid ? 'Pago' : 'Pendente');
+        }
+    }
 }
 
 // Expor método global para configurar a API secret

@@ -404,6 +404,36 @@ export class AutomatedTrackingSystem {
             lastUpdate: progress.lastUpdate
         };
     }
+    
+    // Mostrar informações do pedido
+    showOrderInfo() {
+        const orderInfoSection = document.getElementById('orderInfoSection');
+        if (orderInfoSection) {
+            orderInfoSection.style.display = 'block';
+            
+            // Atualizar informações com dados do usuário se disponível
+            const userData = this.getUserData(this.currentCPF);
+            if (userData) {
+                this.updateElement('orderCustomerName', userData.nome || 'Nome não informado');
+                this.updateElement('orderDeliveryAddress', 'Rua das Flores, 123 - Centro - São Paulo/SP');
+                this.updateElement('orderProductName', 'Kit 12 caixas organizadoras + brinde');
+                this.updateElement('orderCustomsStatus', 'Pendente');
+            }
+        }
+    }
+    
+    // Helper para atualizar elementos
+    updateElement(id, text) {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = text;
+        }
+    }
+    
+    // Atualizar status da taxa alfandegária
+    updateCustomsStatus(status) {
+        this.updateElement('orderCustomsStatus', status);
+    }
 
     // Acelerar para teste (reduzir intervalo)
     setTestMode(enabled = true) {

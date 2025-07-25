@@ -16,6 +16,11 @@
   status = 200
 
 [[redirects]]
+  from = "/webhook/zentra"
+  to = "/.netlify/functions/webhook-zentra"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200

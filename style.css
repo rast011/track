@@ -2523,6 +2523,42 @@ body {
     margin-bottom: 20px;
 }
 
+.payment-stage-filters {
+    margin-bottom: 20px;
+}
+
+.payment-filter-btn {
+    background: #e1e5e9;
+    color: #345C7A;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.payment-filter-btn:hover {
+    background: #345C7A;
+    color: white;
+    transform: translateY(-1px);
+}
+
+.payment-filter-btn.active {
+    background: #345C7A;
+    color: white;
+    box-shadow: 0 2px 8px rgba(52, 92, 122, 0.3);
+}
+
+.payment-filter-btn i {
+    font-size: 0.8rem;
+}
+
 /* Responsive Design - RESPONSIVIDADE COMPLETA PARA MOBILE */
 @media (max-width: 768px) {
     .hero {
@@ -2771,6 +2807,17 @@ body {
     
     .info-content {
         padding: 20px;
+    }
+    
+    .payment-filter-btn {
+        font-size: 0.75rem;
+        padding: 6px 12px;
+        margin-bottom: 5px;
+    }
+    
+    .filter-buttons {
+        flex-direction: column;
+        align-items: stretch;
     }
 }
 

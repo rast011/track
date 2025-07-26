@@ -1415,20 +1415,15 @@ class AdminPanel {
         switch (action) {
             case 'next':
                 actionText = 'avançar para a próxima etapa';
-            this.showMassActionModal('prev', 'Voltar etapa dos leads selecionados?', 'Todos os leads selecionados serão movidos para a etapa anterior.');
+                actionDetails = `${selectedLeads.length} lead(s) serão movidos para a próxima etapa.`;
                 break;
             case 'prev':
                 actionText = 'voltar para a etapa anterior';
-            const targetStage = document.getElementById('targetStageSelect').value;
-            if (!targetStage) {
-                alert('Por favor, selecione uma etapa antes de continuar.');
-                return;
-            }
-            this.showMassActionModal('set', 'Definir etapa específica para os leads selecionados?', `Todos os leads selecionados serão movidos para a etapa ${targetStage}.`);
+                actionDetails = `${selectedLeads.length} lead(s) serão movidos para a etapa anterior.`;
                 break;
             case 'set':
                 actionText = 'definir uma etapa específica';
-            this.showMassActionModal('delete', 'Excluir permanentemente os leads selecionados?', 'Esta ação não pode ser desfeita. Todos os dados dos leads selecionados serão removidos.');
+                actionDetails = `${selectedLeads.length} lead(s) terão sua etapa alterada.`;
                 break;
             case 'delete':
                 actionText = 'excluir permanentemente';
@@ -1445,47 +1440,15 @@ class AdminPanel {
         // Check if any schedule is set
         const scheduleInput = document.getElementById(`schedule${action.charAt(0).toUpperCase() + action.slice(1)}`);
         if (scheduleInput && scheduleInput.value) {
-    showMassActionModal(action, message, details) {
+            const scheduledDate = new Date(scheduleInput.value);
             document.getElementById('scheduledDateTime').textContent = scheduledDate.toLocaleString('pt-BR');
             scheduleEl.style.display = 'block';
         } else {
-        const scheduleConfirmation = document.getElementById('scheduleConfirmation');
-        const scheduledDateTime = document.getElementById('scheduledDateTime');
             scheduleEl.style.display = 'none';
         }
 
         this.pendingMassAction = { action, selectedLeads };
-        // Mostrar detalhes da ação
-        detailsElement.innerHTML = `
-            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0;">
-                <p style="margin: 0; color: #495057;">${details}</p>
-                <div style="margin-top: 10px; font-weight: 600; color: #345C7A;">
-                    Leads afetados: ${this.selectedLeads.length}
-                </div>
-            </div>
-        `;
-        
-        // Verificar se há agendamento
-        const scheduleInput = this.getScheduleInputForAction(action);
-        if (scheduleInput && scheduleInput.value) {
-            const scheduleDate = new Date(scheduleInput.value);
-            scheduledDateTime.textContent = scheduleDate.toLocaleString('pt-BR');
-            scheduleConfirmation.style.display = 'block';
-        } else {
-            scheduleConfirmation.style.display = 'none';
-        }
-        
         modal.style.display = 'flex';
-    }
-
-    getScheduleInputForAction(action) {
-        const scheduleInputs = {
-            'next': document.getElementById('scheduleNext'),
-            'prev': document.getElementById('schedulePrev'),
-            'set': document.getElementById('scheduleSet'),
-            'delete': document.getElementById('scheduleDelete')
-        };
-        return scheduleInputs[action];
     }
 
     closeMassActionModal() {
@@ -1711,7 +1674,7 @@ class AdminPanel {
     showBulkImportResults(results) {
                 lead.etapa_atual === parseInt(this.stageFilter);
 
-            this.showMassActionModal('next', 'Avançar etapa dos leads selecionados?', 'Todos os leads selecionados serão movidos para a próxima etapa.');
+            return matchesSearch && matchesDate && matchesStage;
         });
 
         const { successful, failed, duplicatesRemoved } = results;
@@ -1901,9 +1864,9 @@ class AdminPanel {
             const filtered = this.filteredLeads.length;
             
             if (this.searchTerm || this.dateFilter) {
-                leadsCount.textContent = `${filtered} de ${total} leads`;
+                leadsCount.textContent = \`${filtered} de ${total} leads`;
             } else {
-                leadsCount.textContent = `${total} leads`;
+                leadsCount.textContent = \`${total} leads`;
             }
         }
     }
@@ -1958,7 +1921,7 @@ class AdminPanel {
                 // Recarregar tabela
                 this.filterLeads();
                 
-                console.log(`✅ Lead ${leadId} atualizado para etapa ${newStage}`);
+                console.log(\`✅ Lead ${leadId} atualizado para etapa ${newStage}`);
             } else {
                 throw new Error(result.error);
             }
@@ -2133,7 +2096,7 @@ class AdminPanel {
             }
         }
         
-        console.log(`🔧 Sistema alterado para modo: ${mode}`);
+        console.log(\`🔧 Sistema alterado para modo: ${mode}`);
     }
 
     initializeAutoMode() {

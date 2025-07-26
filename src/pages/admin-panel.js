@@ -16,6 +16,7 @@ class AdminPanel {
         this.autoUpdateInterval = null;
         this.searchTerm = '';
         this.dateFilter = '';
+        this.currentView = 'leads'; // 'leads', 'addLead', 'bulkAdd'
         
         this.init();
     }
@@ -86,6 +87,9 @@ class AdminPanel {
         
         // Iniciar modo automático se configurado
         this.initializeAutoMode();
+        
+        // Mostrar view inicial
+        this.showView('leads');
     }
 
     setupAdminEvents() {
@@ -105,6 +109,234 @@ class AdminPanel {
         
         // Busca e filtros
         this.setupSearchAndFilters();
+        
+        // Navegação entre views
+        this.setupViewNavigation();
+        
+        // Formulários
+        this.setupForms();
+    }
+    
+    setupViewNavigation() {
+        const showLeadsBtn = document.getElementById('showLeadsView');
+        const showAddLeadBtn = document.getElementById('showAddLeadView');
+        const showBulkAddBtn = document.getElementById('showBulkAddView');
+        
+        if (showLeadsBtn) {
+            showLeadsBtn.addEventListener('click', () => this.showView('leads'));
+        }
+        
+        if (showAddLeadBtn) {
+            showAddLeadBtn.addEventListener('click', () => this.showView('addLead'));
+        }
+        
+        if (showBulkAddBtn) {
+            showBulkAddBtn.addEventListener('click', () => this.showView('bulkAdd'));
+        }
+    }
+    
+    setupForms() {
+        // Formulário de lead individual
+        const addLeadForm = document.getElementById('addLeadForm');
+        if (addLeadForm) {
+            addLeadForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handleAddLead();
+            });
+        }
+        
+        // Formulário de leads em massa
+        const bulkAddForm = document.getElementById('bulkAddForm');
+        if (bulkAddForm) {
+            bulkAddForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handleBulkAdd();
+            });
+        }
+        
+        // Máscara de CPF
+        const cpfInput = document.getElementById('addLeadCPF');
+        if (cpfInput) {
+            cpfInput.addEventListener('input', (e) => {
+                CPFValidator.applyCPFMask(e.target);
+            });
+        }
+    }
+    
+    showView(viewName) {
+        this.currentView = viewName;
+        
+        // Ocultar todas as views
+        document.querySelectorAll('.admin-view').forEach(view => {
+            view.style.display = 'none';
+        });
+        
+        // Mostrar view selecionada
+        const targetView = document.getElementById(`${viewName}View`);
+        if (targetView) {
+            targetView.style.display = 'block';
+        }
+        
+        // Atualizar botões de navegação
+        document.querySelectorAll('.nav-button').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        const activeBtn = document.getElementById(`show${viewName.charAt(0).toUpperCase() + viewName.slice(1)}View`);
+        if (activeBtn) {
+            activeBtn.classList.add('active');
+        }
+        
+        console.log(`📄 Exibindo view: ${viewName}`);
+    }
+    
+    async handleAddLead() {
+        const formData = this.getAddLeadFormData();
+        
+        if (!this.validateLeadData(formData)) {
+            alert('Por favor, preencha todos os campos obrigatórios');
+            return;
+        }
+        
+        try {
+            const leadData = this.formatLeadData(formData);
+            const result = await this.dbService.createLead(leadData);
+            
+            if (result.success) {
+                console.log('✅ Lead criado com sucesso');
+                this.clearAddLeadForm();
+                this.loadLeads();
+                this.showView('leads');
+                alert('Lead criado com sucesso!');
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Erro ao criar lead:', error);
+            alert('Erro ao criar lead: ' + error.message);
+        }
+    }
+    
+    async handleBulkAdd() {
+        const bulkData = document.getElementById('bulkLeadsData').value.trim();
+        
+        if (!bulkData) {
+            alert('Por favor, cole os dados dos leads');
+            return;
+        }
+        
+        const lines = bulkData.split('\n').filter(line => line.trim());
+        const leads = [];
+        
+        for (const line of lines) {
+            const parts = line.split(/\s+/);
+            if (parts.length >= 14) {
+                const leadData = this.parseBulkLine(parts);
+                if (leadData) {
+                    leads.push(leadData);
+                }
+            }
+        }
+        
+        if (leads.length === 0) {
+            alert('Nenhum lead válido encontrado nos dados');
+            return;
+        }
+        
+        try {
+            let successCount = 0;
+            for (const leadData of leads) {
+                const result = await this.dbService.createLead(leadData);
+                if (result.success) {
+                    successCount++;
+                }
+            }
+            
+            console.log(`✅ ${successCount} leads criados em massa`);
+            document.getElementById('bulkLeadsData').value = '';
+            this.loadLeads();
+            this.showView('leads');
+            alert(`${successCount} de ${leads.length} leads criados com sucesso!`);
+        } catch (error) {
+            console.error('❌ Erro na criação em massa:', error);
+            alert('Erro na criação em massa: ' + error.message);
+        }
+    }
+    
+    getAddLeadFormData() {
+        return {
+            nome: document.getElementById('addLeadNome').value,
+            email: document.getElementById('addLeadEmail').value,
+            telefone: document.getElementById('addLeadTelefone').value,
+            cpf: document.getElementById('addLeadCPF').value,
+            produto: document.getElementById('addLeadProduto').value,
+            valor: document.getElementById('addLeadValor').value,
+            endereco: document.getElementById('addLeadEndereco').value,
+            numero: document.getElementById('addLeadNumero').value,
+            complemento: document.getElementById('addLeadComplemento').value,
+            bairro: document.getElementById('addLeadBairro').value,
+            cep: document.getElementById('addLeadCEP').value,
+            cidade: document.getElementById('addLeadCidade').value,
+            estado: document.getElementById('addLeadEstado').value,
+            pais: document.getElementById('addLeadPais').value
+        };
+    }
+    
+    parseBulkLine(parts) {
+        try {
+            return {
+                nome: parts[0] + ' ' + parts[1] + ' ' + parts[2], // Assumindo 3 nomes
+                email: parts[3],
+                telefone: parts[4],
+                cpf: parts[5],
+                produto: parts.slice(6, -8).join(' '), // Produto pode ter múltiplas palavras
+                valor: parseFloat(parts[parts.length - 8].replace(',', '.')),
+                endereco: parts[parts.length - 7],
+                numero: parts[parts.length - 6],
+                complemento: parts[parts.length - 5],
+                bairro: parts[parts.length - 4],
+                cep: parts[parts.length - 3],
+                cidade: parts[parts.length - 2],
+                estado: parts[parts.length - 1],
+                pais: 'BR'
+            };
+        } catch (error) {
+            console.error('❌ Erro ao processar linha:', error);
+            return null;
+        }
+    }
+    
+    validateLeadData(data) {
+        return data.nome && data.cpf && data.produto && data.valor;
+    }
+    
+    formatLeadData(formData) {
+        const enderecoCompleto = `${formData.endereco}, ${formData.numero}, ${formData.complemento}, ${formData.bairro}, ${formData.cep}, ${formData.cidade}/${formData.estado}-${formData.pais}`;
+        
+        return {
+            nome_completo: formData.nome,
+            cpf: formData.cpf.replace(/[^\d]/g, ''),
+            email: formData.email,
+            telefone: formData.telefone,
+            endereco: enderecoCompleto,
+            produtos: [{
+                nome: formData.produto,
+                preco: parseFloat(formData.valor),
+                imagem: '/traduza-have-you-propose copy.png'
+            }],
+            valor_total: parseFloat(formData.valor),
+            meio_pagamento: 'PIX',
+            origem: 'direto',
+            etapa_atual: 1,
+            status_pagamento: 'pendente',
+            data_compra: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
+    }
+    
+    clearAddLeadForm() {
+        document.getElementById('addLeadForm').reset();
     }
 
     setupSystemControls() {
@@ -282,6 +514,10 @@ class AdminPanel {
                 <tr>
                     <td>${lead.nome_completo || 'Nome não informado'}</td>
                     <td>${CPFValidator.formatCPF(lead.cpf || '')}</td>
+                    <td>${lead.email || 'N/A'}</td>
+                    <td>${lead.telefone || 'N/A'}</td>
+                    <td>${lead.produtos?.[0]?.nome || 'Produto não informado'}</td>
+                    <td>R$ ${(lead.valor_total || 0).toFixed(2)}</td>
                     <td>${createdDate}</td>
                     <td>
                         <span class="stage-badge ${lead.etapa_atual >= 11 ? 'completed' : 'pending'}">
@@ -313,16 +549,21 @@ class AdminPanel {
     getStageNameByNumber(stageNumber) {
         const stages = {
             1: 'Pedido criado',
-            2: 'Preparando envio',
-            3: 'Enviado da China',
-            4: 'Centro triagem',
-            5: 'Centro logístico',
+            2: 'Preparando para envio',
+            3: 'Vendedor enviou pedido',
+            4: 'Centro triagem Shenzhen',
+            5: 'Centro logístico Shenzhen',
             6: 'Trânsito internacional',
             7: 'Liberado exportação',
-            8: 'Saiu da origem',
+            8: 'Saiu origem Shenzhen',
             9: 'Chegou no Brasil',
-            10: 'Trânsito Curitiba',
-            11: 'Alfândega importação'
+            10: 'Trânsito Curitiba/PR',
+            11: 'Alfândega importação',
+            12: 'Liberado alfândega',
+            13: 'Sairá para entrega',
+            14: 'Em trânsito entrega',
+            15: 'Rota de entrega',
+            16: 'Tentativa entrega'
         };
         
         return stages[stageNumber] || 'Desconhecido';

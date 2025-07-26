@@ -1040,15 +1040,15 @@ body {
 }
 
 .details-content.expanded {
-    padding: 25px;
-    max-height: 350px;
+    padding: 30px;
+    max-height: 500px;
 }
 
 .detail-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 0;
+    padding: 15px 0;
     border-bottom: 1px solid #f1f3f4;
 }
 
@@ -1059,7 +1059,8 @@ body {
 .detail-label {
     font-weight: 600;
     color: #666;
-    min-width: 120px;
+    min-width: 140px;
+    font-size: 0.95rem;
 }
 
 .detail-value {
@@ -1067,6 +1068,8 @@ body {
     color: #2c3e50;
     text-align: right;
     flex: 1;
+    font-size: 0.95rem;
+    line-height: 1.4;
 }
 
 /* Product Row with Image */

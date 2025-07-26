@@ -514,9 +514,9 @@ class AdminPanel {
 
         const validData = this.bulkParsedData.filter(row => row.isValid);
         
-        if (validData.length === 0) {
-            alert('Nenhum registro válido para importar.');
-            return;
+        const processedData = this.processBulkData(textareaData);
+        
+        console.log('📊 Dados processados para importação:', processedData);
         }
 
         const confirmButton = document.getElementById('confirmBulkImportButton');
@@ -524,13 +524,15 @@ class AdminPanel {
         confirmButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Importando...';
         confirmButton.disabled = true;
 
-        try {
-            let successCount = 0;
-            let errorCount = 0;
+        const importResults = {
+            successful: [],
+            failed: [],
+            duplicatesRemoved: processedData.duplicatesRemoved
+        };
             const successfulLeads = [];
             const failedLeads = [];
 
-            for (const row of validData) {
+            for (const leadData of processedData.validLeads) {
                 try {
                     // Check for duplicate CPF
                     const existingLead = await this.dbService.getLeadByCPF(row.cpf);
@@ -566,24 +568,31 @@ class AdminPanel {
                     const result = await this.dbService.createLead(leadData);
                     
                     if (result.success) {
-                        successCount++;
+                        importResults.successful.push({
+                            nome: leadData.nome_completo,
+                            cpf: leadData.cpf,
+                            data: result.data
+                        });
                         successfulLeads.push(leadData);
                     } else {
-                        errorCount++;
-                        failedLeads.push({
+                        importResults.failed.push({
                             nome: row.nome_completo,
                             cpf: row.cpf,
-                            error: result.error || 'Erro desconhecido'
+                            erro: result.error || 'Erro desconhecido'
                         });
                     }
                     
                 } catch (error) {
-                    console.error('Erro ao importar lead:', error);
-                    errorCount++;
+                    // Verificar se é erro de duplicidade
+                    const isDuplicate = error.message && error.message.includes('duplicate') || 
+                                      error.message && error.message.includes('unique') ||
+                                      error.message && error.message.includes('already exists');
+                    
+                    importResults.failed.push({
                     failedLeads.push({
                         nome: row.nome_completo,
                         cpf: row.cpf,
-                        error: error.message || 'Erro desconhecido'
+                        erro: isDuplicate ? 'Pedido já existe no banco de dados' : error.message
                     });
                 }
             }
@@ -592,7 +601,7 @@ class AdminPanel {
             this.showBulkResults(successCount, errorCount, successfulLeads, failedLeads);
             
             // Refresh leads list
-            await this.loadLeads();
+            this.showBulkImportResults(importResults);
             
         } catch (error) {
             console.error('Erro na importação em massa:', error);
@@ -605,7 +614,9 @@ class AdminPanel {
 
     showBulkResults(successCount, errorCount, successfulLeads, failedLeads) {
         const resultsSection = document.getElementById('bulkResultsSection');
-        const resultsContainer = document.getElementById('bulkResultsContainer');
+        const validLeads = [];
+        const duplicatesRemoved = [];
+        const seenCPFs = new Set();
         
         if (!resultsSection || !resultsContainer) return;
 
@@ -739,6 +750,21 @@ class AdminPanel {
         
         // Scroll to results
         resultsSection.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    goToLeadsList() {
+        // Ir para a visualização de leads
+        this.showView('leadsView');
+        
+        // Atualizar a lista de leads
+        this.refreshLeadsList();
+        
+        // Destacar navegação
+        document.querySelectorAll('.nav-button').forEach(btn => btn.classList.remove('active'));
+        document.getElementById('showLeadsView').classList.add('active');
+        
+        // Scroll para o topo
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
     
     setupBulkImportTable() {
@@ -942,14 +968,52 @@ class AdminPanel {
                     console.error('Erro ao criar lead:', result.error);
                 }
                 
-                // Pequeno delay para não sobrecarregar o banco
+                const [nome, email, telefone, cpf, produto, valor, rua, numero, complemento, bairro, cep, cidade, estado, pais] = fields;
+                
+                // Validação de campos essenciais
+                if (!nome || !email || !telefone || !cpf) {
+                    console.warn(`Linha ${index + 1} ignorada: campos obrigatórios ausentes`);
+                    return;
+                }
+                
+                // Limpar e validar CPF
+                const cleanCPF = cpf.replace(/[^\d]/g, '');
+                if (cleanCPF.length !== 11) {
+                    console.warn(`Linha ${index + 1} ignorada: CPF inválido`);
+                    return;
+                }
+                
+                // Verificar duplicidade dentro da própria lista
+                if (seenCPFs.has(cleanCPF)) {
+                    duplicatesRemoved.push({
+                        nome: nome,
+                        cpf: cleanCPF,
+                        linha: index + 1
+                    });
+                    console.log(`Duplicata removida silenciosamente: ${nome} (${cleanCPF})`);
+                    return;
+                }
+                seenCPFs.add(cleanCPF);
+                
+                // Construir endereço completo
+                const enderecoCompleto = [
+                    rua && numero ? `${rua}, ${numero}` : (rua || ''),
+                    complemento || '',
+                    bairro || '',
+                    cidade || '',
+                    estado || '',
+                    cep || '',
+                    pais || 'BR'
+                ].filter(part => part.trim()).join(' - ');
+                
+                const leadData = {
                 await new Promise(resolve => setTimeout(resolve, 100));
-            }
+                    cpf: cleanCPF,
             
             console.log(`✅ ${successCount} leads criados em massa`);
-            this.clearBulkImportTable();
+                    endereco: enderecoCompleto || null,
             this.loadLeads();
-            this.showView('leads');
+                        nome: produto || 'Kit 12 caixas organizadoras + brinde',
             
             if (errorCount > 0) {
                 alert(`${successCount} leads criados com sucesso!\n${errorCount} leads falharam (possível duplicação de CPF).`);
@@ -1351,15 +1415,20 @@ class AdminPanel {
         switch (action) {
             case 'next':
                 actionText = 'avançar para a próxima etapa';
-                actionDetails = `${selectedLeads.length} lead(s) serão movidos para a próxima etapa.`;
+            this.showMassActionModal('prev', 'Voltar etapa dos leads selecionados?', 'Todos os leads selecionados serão movidos para a etapa anterior.');
                 break;
             case 'prev':
                 actionText = 'voltar para a etapa anterior';
-                actionDetails = `${selectedLeads.length} lead(s) serão movidos para a etapa anterior.`;
+            const targetStage = document.getElementById('targetStageSelect').value;
+            if (!targetStage) {
+                alert('Por favor, selecione uma etapa antes de continuar.');
+                return;
+            }
+            this.showMassActionModal('set', 'Definir etapa específica para os leads selecionados?', `Todos os leads selecionados serão movidos para a etapa ${targetStage}.`);
                 break;
             case 'set':
                 actionText = 'definir uma etapa específica';
-                actionDetails = `${selectedLeads.length} lead(s) terão sua etapa alterada.`;
+            this.showMassActionModal('delete', 'Excluir permanentemente os leads selecionados?', 'Esta ação não pode ser desfeita. Todos os dados dos leads selecionados serão removidos.');
                 break;
             case 'delete':
                 actionText = 'excluir permanentemente';
@@ -1376,15 +1445,47 @@ class AdminPanel {
         // Check if any schedule is set
         const scheduleInput = document.getElementById(`schedule${action.charAt(0).toUpperCase() + action.slice(1)}`);
         if (scheduleInput && scheduleInput.value) {
-            const scheduledDate = new Date(scheduleInput.value);
+    showMassActionModal(action, message, details) {
             document.getElementById('scheduledDateTime').textContent = scheduledDate.toLocaleString('pt-BR');
             scheduleEl.style.display = 'block';
         } else {
+        const scheduleConfirmation = document.getElementById('scheduleConfirmation');
+        const scheduledDateTime = document.getElementById('scheduledDateTime');
             scheduleEl.style.display = 'none';
         }
 
         this.pendingMassAction = { action, selectedLeads };
+        // Mostrar detalhes da ação
+        detailsElement.innerHTML = `
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                <p style="margin: 0; color: #495057;">${details}</p>
+                <div style="margin-top: 10px; font-weight: 600; color: #345C7A;">
+                    Leads afetados: ${this.selectedLeads.length}
+                </div>
+            </div>
+        `;
+        
+        // Verificar se há agendamento
+        const scheduleInput = this.getScheduleInputForAction(action);
+        if (scheduleInput && scheduleInput.value) {
+            const scheduleDate = new Date(scheduleInput.value);
+            scheduledDateTime.textContent = scheduleDate.toLocaleString('pt-BR');
+            scheduleConfirmation.style.display = 'block';
+        } else {
+            scheduleConfirmation.style.display = 'none';
+        }
+        
         modal.style.display = 'flex';
+    }
+
+    getScheduleInputForAction(action) {
+        const scheduleInputs = {
+            'next': document.getElementById('scheduleNext'),
+            'prev': document.getElementById('schedulePrev'),
+            'set': document.getElementById('scheduleSet'),
+            'delete': document.getElementById('scheduleDelete')
+        };
+        return scheduleInputs[action];
     }
 
     closeMassActionModal() {
@@ -1441,7 +1542,7 @@ class AdminPanel {
         // Update action counts
         document.getElementById('massNextCount').textContent = `(${selectedCount} leads)`;
         document.getElementById('massPrevCount').textContent = `(${selectedCount} leads)`;
-        document.getElementById('massSetCount').textContent = `(${selectedCount} leads)`;
+                    valor_total: parseFloat(valor) || 67.90,
         document.getElementById('massDeleteCount').textContent = `(${selectedCount} leads)`;
     }
     
@@ -1450,7 +1551,7 @@ class AdminPanel {
         const checkboxes = document.querySelectorAll('.lead-checkbox:checked');
         
         checkboxes.forEach(checkbox => {
-            const leadId = checkbox.dataset.leadId;
+                validLeads.push(leadData);
             const lead = this.findLeadById(leadId);
             if (lead) {
                 selectedLeads.push(lead);
@@ -1601,44 +1702,115 @@ class AdminPanel {
 
             // Filtro por data
             const matchesDate = !this.dateFilter || 
-                new Date(lead.created_at).toDateString() === new Date(this.dateFilter).toDateString();
+        return {
+            validLeads,
+            duplicatesRemoved
+        };
             
             // Filtro por etapa
-            const matchesStage = !this.stageFilter || this.stageFilter === 'all' ||
+    showBulkImportResults(results) {
                 lead.etapa_atual === parseInt(this.stageFilter);
 
-            return matchesSearch && matchesDate && matchesStage;
+            this.showMassActionModal('next', 'Avançar etapa dos leads selecionados?', 'Todos os leads selecionados serão movidos para a próxima etapa.');
         });
 
+        const { successful, failed, duplicatesRemoved } = results;
+        const successCount = successful.length;
+        const errorCount = failed.length;
+        
         this.renderLeadsTable();
-        this.setupPagination();
-    }
-
-    setupPagination() {
-        this.currentPage = 1;
-        this.leadsPerPage = 50;
-        this.totalPages = Math.ceil(this.filteredLeads.length / this.leadsPerPage);
-        
-        this.renderPaginationControls();
-    }
+            <!-- Seção de Sucessos -->
+            ${successCount > 0 ? `
+                <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 12px; padding: 25px; margin-bottom: 25px;">
+                    <h5 style="color: #155724; margin-bottom: 20px; font-size: 1.2rem;">
+                        <i class="fas fa-check-circle"></i> Pedidos Postados com Sucesso (${successCount})
+                    </h5>
+                    <div style="max-height: 200px; overflow-y: auto; margin-bottom: 20px;">
+                        ${successful.map(item => `
+                            <div style="background: #fff; border: 1px solid #c3e6cb; border-radius: 6px; padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <strong>${item.nome}</strong>
+                                    <span style="color: #666; margin-left: 10px;">CPF: ${item.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')}</span>
+                                </div>
+                                <i class="fas fa-check" style="color: #28a745;"></i>
+                            </div>
+                        `).join('')}
     
+                    <button class="control-button success" onclick="adminPanel.goToLeadsList()" style="width: 100%;">
+                        <i class="fas fa-list"></i> Ir para Lista
+                    </button>
     renderPaginationControls() {
-        const paginationContainer = document.getElementById('paginationControls');
-        if (!paginationContainer) return;
-        
-        const totalPages = Math.ceil(this.filteredLeads.length / this.leadsPerPage);
-        
-        paginationContainer.innerHTML = `
+            ` : ''}
+
+            <!-- Seção de Erros -->
+            ${errorCount > 0 ? `
+                <div style="background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 12px; padding: 25px; margin-bottom: 25px;">
+                    <h5 style="color: #721c24; margin-bottom: 20px; font-size: 1.2rem;">
+                        <i class="fas fa-exclamation-triangle"></i> Pedidos com Erro (${errorCount})
             <div class="pagination-info">
-                Página ${this.currentPage} de ${totalPages} (${this.filteredLeads.length} leads)
-            </div>
-            <div class="pagination-buttons">
-                <button class="control-button" ${this.currentPage === 1 ? 'disabled' : ''} onclick="adminPanel.goToPage(${this.currentPage - 1})">
-                    <i class="fas fa-chevron-left"></i> Anterior
+                    <div style="max-height: 250px; overflow-y: auto;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: #f5c6cb;">
+                                    <th style="padding: 10px; text-align: left; border: 1px solid #f5c6cb;">Nome</th>
+                                    <th style="padding: 10px; text-align: left; border: 1px solid #f5c6cb;">CPF</th>
+                                    <th style="padding: 10px; text-align: left; border: 1px solid #f5c6cb;">Motivo do Erro</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${failed.map(error => `
+                                    <tr style="background: #fff;">
+                                        <td style="padding: 10px; border: 1px solid #f5c6cb;">${error.nome}</td>
+                                        <td style="padding: 10px; border: 1px solid #f5c6cb;">${error.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')}</td>
+                                        <td style="padding: 10px; border: 1px solid #f5c6cb; color: #721c24;">
+                                            <small>${error.erro}</small>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            ` : ''}
+
+            <!-- Informações sobre Duplicatas Removidas -->
+            ${duplicatesRemoved.length > 0 ? `
+                <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                    <h6 style="color: #856404; margin-bottom: 15px;">
+                        <i class="fas fa-info-circle"></i> Duplicatas Removidas Automaticamente (${duplicatesRemoved.length})
+                    </h6>
+                    <p style="color: #856404; font-size: 0.9rem; margin-bottom: 10px;">
+                        As seguintes linhas foram removidas por serem duplicatas dentro da própria lista:
+                    </p>
+                    <div style="max-height: 150px; overflow-y: auto;">
+                        ${duplicatesRemoved.map(dup => `
+                            <div style="background: #fff; border: 1px solid #ffeaa7; border-radius: 4px; padding: 8px; margin-bottom: 5px; font-size: 0.85rem;">
+                                Linha ${dup.linha}: ${dup.nome} (${dup.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')})
                 </button>
                 <button class="control-button" ${this.currentPage === totalPages ? 'disabled' : ''} onclick="adminPanel.goToPage(${this.currentPage + 1})">
                     Próxima <i class="fas fa-chevron-right"></i>
                 </button>
+            </div>
+
+            <!-- Resumo Final -->
+            <div style="background: #e9ecef; border: 1px solid #dee2e6; border-radius: 12px; padding: 20px; text-align: center;">
+                <h6 style="color: #495057; margin-bottom: 15px;">
+                    <i class="fas fa-chart-bar"></i> Resumo da Importação
+                </h6>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                    <div>
+                        <div style="font-size: 1.5rem; font-weight: bold; color: #28a745;">${successCount}</div>
+                        <div style="font-size: 0.9rem; color: #666;">Sucessos</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 1.5rem; font-weight: bold; color: #dc3545;">${errorCount}</div>
+                        <div style="font-size: 0.9rem; color: #666;">Erros</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 1.5rem; font-weight: bold; color: #ffc107;">${duplicatesRemoved.length}</div>
+                        <div style="font-size: 0.9rem; color: #666;">Duplicatas</div>
+                    </div>
+                </div>
             </div>
         `;
     }

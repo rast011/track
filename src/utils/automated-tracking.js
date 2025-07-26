@@ -25,7 +25,7 @@ export class AutomatedTrackingSystem {
                 id: 2,
                 date: '23 de jul.',
                 time: '22:49',
-                title: 'Preparando para envio',
+                title: 'O seu pedido está sendo preparado para envio',
                 description: 'O seu pedido está sendo preparado para envio',
                 isChina: false,
                 completed: false
@@ -34,7 +34,7 @@ export class AutomatedTrackingSystem {
                 id: 3,
                 date: '24 de jul.',
                 time: '14:26',
-                title: 'Pedido enviado',
+                title: '[China] O vendedor enviou seu pedido',
                 description: '[China] O vendedor enviou seu pedido',
                 isChina: true,
                 completed: false
@@ -43,7 +43,7 @@ export class AutomatedTrackingSystem {
                 id: 4,
                 date: '24 de jul.',
                 time: '11:24',
-                title: 'Centro de triagem',
+                title: '[China] O pedido chegou ao centro de triagem de Shenzhen',
                 description: '[China] O pedido chegou ao centro de triagem de Shenzhen',
                 isChina: true,
                 completed: false
@@ -52,7 +52,7 @@ export class AutomatedTrackingSystem {
                 id: 5,
                 date: '24 de jul.',
                 time: '16:33',
-                title: 'Centro logístico',
+                title: '[China] Pedido saiu do centro logístico de Shenzhen',
                 description: '[China] Pedido saiu do centro logístico de Shenzhen',
                 isChina: true,
                 completed: false
@@ -61,7 +61,7 @@ export class AutomatedTrackingSystem {
                 id: 6,
                 date: '24 de jul.',
                 time: '21:09',
-                title: 'Trânsito internacional',
+                title: '[China] Coletado. O pedido está em trânsito internacional',
                 description: '[China] Coletado. O pedido está em trânsito internacional',
                 isChina: true,
                 completed: false
@@ -70,7 +70,7 @@ export class AutomatedTrackingSystem {
                 id: 7,
                 date: '24 de jul.',
                 time: '09:50',
-                title: 'Liberado para exportação',
+                title: '[China] O pedido foi liberado na alfândega de exportação',
                 description: '[China] O pedido foi liberado na alfândega de exportação',
                 isChina: true,
                 completed: false
@@ -79,7 +79,7 @@ export class AutomatedTrackingSystem {
                 id: 8,
                 date: '24 de jul.',
                 time: '05:15',
-                title: 'Saiu da origem',
+                title: 'Pedido saiu da origem: Shenzhen',
                 description: 'Pedido saiu da origem: Shenzhen',
                 isChina: false,
                 completed: false
@@ -88,7 +88,7 @@ export class AutomatedTrackingSystem {
                 id: 9,
                 date: '24 de jul.',
                 time: '15:20',
-                title: 'Chegou no Brasil',
+                title: 'Pedido chegou no Brasil',
                 description: 'Pedido chegou no Brasil',
                 isChina: false,
                 completed: false
@@ -97,7 +97,7 @@ export class AutomatedTrackingSystem {
                 id: 10,
                 date: '25 de jul.',
                 time: '14:28',
-                title: 'Centro de distribuição',
+                title: 'Pedido em trânsito para CURITIBA/PR',
                 description: 'Pedido em trânsito para CURITIBA/PR',
                 isChina: false,
                 completed: false
@@ -106,7 +106,7 @@ export class AutomatedTrackingSystem {
                 id: 11,
                 date: '25 de jul.',
                 time: '15:28',
-                title: 'Alfândega de importação',
+                title: 'Pedido chegou na alfândega de importação: CURITIBA/PR',
                 description: 'Pedido chegou na alfândega de importação: CURITIBA/PR',
                 isChina: false,
                 completed: false,

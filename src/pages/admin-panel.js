@@ -8,7 +8,7 @@ import { CPFValidator } from '../utils/cpf-validator.js';
 
 class AdminPanel {
     constructor() {
-        this.dbService = new DatabaseService();
+        this.dbService = new AdminDatabaseService();
         this.leads = [];
         this.filteredLeads = [];
         this.currentEditingLead = null;
@@ -778,9 +778,7 @@ class AdminDatabaseService extends DatabaseService {
 
 // Inicializar painel quando DOM estiver pronto
 document.addEventListener('DOMContentLoaded', () => {
-    // Substituir DatabaseService por versão administrativa
     window.adminPanel = new AdminPanel();
-    window.adminPanel.dbService = new AdminDatabaseService();
 });
 
 // Expor globalmente para uso nos botões

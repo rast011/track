@@ -1060,6 +1060,7 @@ body {
     font-weight: 600;
     color: #666;
     min-width: 140px;
+    font-size: 0.9rem;
     font-size: 0.95rem;
 }
 
@@ -1069,6 +1070,9 @@ body {
     text-align: right;
     flex: 1;
     font-size: 0.95rem;
+    word-wrap: break-word;
+    max-width: 60%;
+    font-size: 0.95rem;
     line-height: 1.4;
 }
 
@@ -1077,8 +1081,12 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 0;
+    padding: 15px 0;
     border-bottom: 1px solid #f1f3f4;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    font-size: 0.95rem;
+    line-height: 1.4;
 }
 
 .product-info {

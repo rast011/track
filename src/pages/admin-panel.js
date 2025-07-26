@@ -612,15 +612,20 @@ class AdminPanel {
 
     async updateLeadStage(leadId, newStage) {
         try {
-            const result = await this.dbService.updateLeadStage(leadId, newStage);
+            // Buscar o lead primeiro para obter o ID correto
+            const lead = this.findLeadById(leadId);
+            if (!lead) {
+                throw new Error('Lead não encontrado');
+            }
+            
+            // Usar CPF para atualização se não tiver ID
+            const identifier = lead.id || lead.cpf;
+            const result = await this.dbService.updateLeadStage(identifier, newStage);
             
             if (result.success) {
                 // Atualizar lead local
-                const lead = this.findLeadById(leadId);
-                if (lead) {
-                    lead.etapa_atual = newStage;
-                    lead.updated_at = new Date().toISOString();
-                }
+                lead.etapa_atual = newStage;
+                lead.updated_at = new Date().toISOString();
                 
                 // Atualizar localStorage como backup
                 this.updateLocalStorageLead(leadId, { etapa_atual: newStage });

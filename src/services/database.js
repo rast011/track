@@ -66,23 +66,28 @@ export class DatabaseService {
         }
 
         try {
+            // Limpar CPF se for passado como ID
+            const cleanCPF = typeof cpf === 'string' ? cpf.replace(/[^\d]/g, '') : cpf;
+            
             const { data, error } = await supabase
                 .from('leads')
-                .update({ etapa_atual: etapaAtual })
-                .eq('cpf', cpf.replace(/[^\d]/g, ''))
-                .select()
-                .single();
+                .update({ 
+                    etapa_atual: etapaAtual,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('cpf', cleanCPF)
+                .select();
 
             if (error) {
                 console.error('Erro ao atualizar etapa:', error);
-                return this.updateLeadStageFallback(cpf, etapaAtual);
+                return this.updateLeadStageFallback(cleanCPF, etapaAtual);
             }
 
-            console.log('✅ Etapa atualizada no Supabase:', data);
-            return { success: true, data };
+            console.log('✅ Etapa atualizada no Supabase:', data?.[0]);
+            return { success: true, data: data?.[0] };
         } catch (error) {
             console.error('Erro na atualização da etapa:', error);
-            return this.updateLeadStageFallback(cpf, etapaAtual);
+            return this.updateLeadStageFallback(cleanCPF, etapaAtual);
         }
     }
 

@@ -2,6 +2,7 @@
  * Painel Administrativo K7 - Logix Express
  * Sistema completo de gerenciamento de leads
  */
+import { supabase } from '../config/supabase.js';
 import { DatabaseService } from '../services/database.js';
 import { CPFValidator } from '../utils/cpf-validator.js';
 

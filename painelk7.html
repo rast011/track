@@ -605,21 +605,25 @@
         <div class="login-logo">
             <i class="fas fa-dove"></i>
         </div>
-        
-        <div class="login-form">
-            <h2 class="login-title">Painel Administrativo</h2>
-            <form id="loginForm">
-                <div class="form-group">
-                    <label for="passwordInput">Senha de Acesso</label>
-                    <input type="password" id="passwordInput" placeholder="Digite a senha" required>
-                </div>
-                <button type="submit" class="login-button">
-                    <i class="fas fa-sign-in-alt"></i> Acessar Painel
-                </button>
-                <div class="error-message" id="errorMessage" style="display: none;"></div>
-            </form>
-        </div>
-    </div>
+<div class="login-form">
+    <h2 class="login-title">Painel Administrativo</h2>
+    <form id="loginForm">
+        <!-- Campo de senha removido -->
+        <button type="submit" class="login-button">
+            <i class="fas fa-sign-in-alt"></i> Acessar Painel
+        </button>
+        <div class="error-message" id="errorMessage" style="display: none;"></div>
+    </form>
+</div>
+
+<script>
+    document.getElementById("loginForm").addEventListener("submit", function (event) {
+        event.preventDefault();
+
+        // Aqui você redireciona direto para o painel, sem autenticação
+        window.location.href = "/painel"; // Troque pelo link da página do painel real
+    });
+</script>
 
     <!-- Admin Panel -->
     <div class="admin-panel" id="adminPanel">

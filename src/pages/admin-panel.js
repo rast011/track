@@ -130,6 +130,9 @@ class AdminPanel {
         
         // Setup filter button
         this.setupFilterButton();
+        
+        // Setup mass action modal
+        this.setupMassActionModal();
     }
     
     setupViewNavigation() {
@@ -522,12 +525,10 @@ class AdminPanel {
         confirmButton.disabled = true;
 
         try {
-            const results = {
-                success: 0,
-                duplicates: 0,
-                errors: 0,
-                duplicateList: []
-            };
+            let successCount = 0;
+            let errorCount = 0;
+            const successfulLeads = [];
+            const failedLeads = [];
 
             for (const row of validData) {
                 try {
@@ -535,11 +536,11 @@ class AdminPanel {
                     const existingLead = await this.dbService.getLeadByCPF(row.cpf);
                     
                     if (existingLead.success && existingLead.data) {
-                        results.duplicates++;
-                        results.duplicateList.push({
+                        errorCount++;
+                        failedLeads.push({
                             nome: row.nome_completo,
                             cpf: row.cpf,
-                            motivo: 'CPF já existe'
+                            error: 'CPF já existe'
                         });
                         continue;
                     }
@@ -565,19 +566,30 @@ class AdminPanel {
                     const result = await this.dbService.createLead(leadData);
                     
                     if (result.success) {
-                        results.success++;
+                        successCount++;
+                        successfulLeads.push(leadData);
                     } else {
-                        results.errors++;
+                        errorCount++;
+                        failedLeads.push({
+                            nome: row.nome_completo,
+                            cpf: row.cpf,
+                            error: result.error || 'Erro desconhecido'
+                        });
                     }
                     
                 } catch (error) {
                     console.error('Erro ao importar lead:', error);
-                    results.errors++;
+                    errorCount++;
+                    failedLeads.push({
+                        nome: row.nome_completo,
+                        cpf: row.cpf,
+                        error: error.message || 'Erro desconhecido'
+                    });
                 }
             }
 
-            // Show results
-            this.showBulkImportResults(results);
+            // Show final message with proper formatting
+            this.showBulkResults(successCount, errorCount, successfulLeads, failedLeads);
             
             // Refresh leads list
             await this.loadLeads();
@@ -589,6 +601,71 @@ class AdminPanel {
             confirmButton.innerHTML = originalText;
             confirmButton.disabled = false;
         }
+    }
+
+    showBulkResults(successCount, errorCount, successfulLeads, failedLeads) {
+        const resultsSection = document.getElementById('bulkResultsSection');
+        const resultsContainer = document.getElementById('bulkResultsContainer');
+        
+        if (!resultsSection || !resultsContainer) return;
+
+        let message = '';
+        if (successCount > 0) {
+            message += `✅ ${successCount} pedidos foram postados com sucesso.`;
+        }
+        if (errorCount > 0) {
+            if (message) message += '<br>';
+            message += `❌ ${errorCount} pedidos não foram postados por duplicidade ou erro.`;
+        }
+        if (successCount === 0 && errorCount === 0) {
+            message = 'Nenhum dado válido foi encontrado para importação.';
+        }
+
+        resultsContainer.innerHTML = `
+            <div class="bulk-results-summary">
+                <p>${message}</p>
+            </div>
+            ${failedLeads.length > 0 ? `
+                <div class="failed-leads-section">
+                    <h5>Leads não importados:</h5>
+                    <table class="failed-leads-table">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>CPF</th>
+                                <th>Motivo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${failedLeads.map(lead => `
+                                <tr>
+                                    <td>${lead.nome || 'N/A'}</td>
+                                    <td>${lead.cpf || 'N/A'}</td>
+                                    <td>${lead.error || 'Erro desconhecido'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            ` : ''}
+        `;
+
+        resultsSection.style.display = 'block';
+    }
+
+    showBulkResultsOld(message, successfulLeads, failedLeads) {
+        const resultsSection = document.getElementById('bulkResultsSection');
+        const resultsContainer = document.getElementById('bulkResultsContainer');
+        
+        if (!resultsSection || !resultsContainer) return;
+
+        resultsContainer.innerHTML = `
+            <div class="bulk-results-summary">
+                <p>${message}</p>
+            </div>
+        `;
+
+        resultsSection.style.display = 'block';
     }
 
     showBulkImportResults(results) {
@@ -1209,10 +1286,10 @@ class AdminPanel {
         
         // Botões de ação em massa
         const massActionButtons = {
-            'massNextStage': () => this.massNextStage(),
-            'massPrevStage': () => this.massPrevStage(),
-            'massDeleteLeads': () => this.massDeleteLeads(),
-            'massSetStage': () => this.massSetStage()
+            'massNextStage': () => this.showMassActionModal('next'),
+            'massPrevStage': () => this.showMassActionModal('prev'),
+            'massDeleteLeads': () => this.showMassActionModal('delete'),
+            'massSetStage': () => this.showMassActionModal('set')
         };
         
         Object.entries(massActionButtons).forEach(([id, handler]) => {
@@ -1221,6 +1298,122 @@ class AdminPanel {
                 button.addEventListener('click', handler);
             }
         });
+    }
+
+    setupMassActionModal() {
+        const modal = document.getElementById('massActionModal');
+        const closeBtn = document.getElementById('closeMassActionModal');
+        const cancelBtn = document.getElementById('cancelMassAction');
+        const confirmBtn = document.getElementById('confirmMassAction');
+
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                this.closeMassActionModal();
+            });
+        }
+
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => {
+                this.closeMassActionModal();
+            });
+        }
+
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', () => {
+                this.executePendingMassAction();
+            });
+        }
+
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    this.closeMassActionModal();
+                }
+            });
+        }
+    }
+
+    showMassActionModal(action) {
+        const selectedLeads = this.getSelectedLeads();
+        if (selectedLeads.length === 0) {
+            alert('Selecione pelo menos um lead para executar ações em massa.');
+            return;
+        }
+
+        const modal = document.getElementById('massActionModal');
+        const messageEl = document.getElementById('massActionMessage');
+        const detailsEl = document.getElementById('massActionDetails');
+        const scheduleEl = document.getElementById('scheduleConfirmation');
+        
+        let actionText = '';
+        let actionDetails = '';
+        
+        switch (action) {
+            case 'next':
+                actionText = 'avançar para a próxima etapa';
+                actionDetails = `${selectedLeads.length} lead(s) serão movidos para a próxima etapa.`;
+                break;
+            case 'prev':
+                actionText = 'voltar para a etapa anterior';
+                actionDetails = `${selectedLeads.length} lead(s) serão movidos para a etapa anterior.`;
+                break;
+            case 'set':
+                actionText = 'definir uma etapa específica';
+                actionDetails = `${selectedLeads.length} lead(s) terão sua etapa alterada.`;
+                break;
+            case 'delete':
+                actionText = 'excluir permanentemente';
+                actionDetails = `${selectedLeads.length} lead(s) serão excluídos permanentemente do sistema.`;
+                break;
+        }
+
+        messageEl.textContent = `Tem certeza que deseja ${actionText} os leads selecionados?`;
+        detailsEl.innerHTML = `
+            <p><strong>Ação:</strong> ${actionText.charAt(0).toUpperCase() + actionText.slice(1)}</p>
+            <p><strong>Leads afetados:</strong> ${actionDetails}</p>
+        `;
+
+        // Check if any schedule is set
+        const scheduleInput = document.getElementById(`schedule${action.charAt(0).toUpperCase() + action.slice(1)}`);
+        if (scheduleInput && scheduleInput.value) {
+            const scheduledDate = new Date(scheduleInput.value);
+            document.getElementById('scheduledDateTime').textContent = scheduledDate.toLocaleString('pt-BR');
+            scheduleEl.style.display = 'block';
+        } else {
+            scheduleEl.style.display = 'none';
+        }
+
+        this.pendingMassAction = { action, selectedLeads };
+        modal.style.display = 'flex';
+    }
+
+    closeMassActionModal() {
+        const modal = document.getElementById('massActionModal');
+        modal.style.display = 'none';
+        this.pendingMassAction = null;
+    }
+
+    executePendingMassAction() {
+        if (!this.pendingMassAction) return;
+
+        const { action } = this.pendingMassAction;
+        
+        this.closeMassActionModal();
+
+        switch (action) {
+            case 'next':
+                this.massNextStage();
+                break;
+            case 'prev':
+                this.massPrevStage();
+                break;
+            case 'set':
+                this.massSetStage();
+                break;
+            case 'delete':
+                this.massDeleteLeads();
+                break;
+        }
     }
     
     toggleSelectAll(checked) {
@@ -1244,6 +1437,12 @@ class AdminPanel {
         if (selectedCountDisplay) {
             selectedCountDisplay.textContent = `${selectedCount} selecionados`;
         }
+
+        // Update action counts
+        document.getElementById('massNextCount').textContent = `(${selectedCount} leads)`;
+        document.getElementById('massPrevCount').textContent = `(${selectedCount} leads)`;
+        document.getElementById('massSetCount').textContent = `(${selectedCount} leads)`;
+        document.getElementById('massDeleteCount').textContent = `(${selectedCount} leads)`;
     }
     
     getSelectedLeads() {

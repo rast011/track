@@ -518,6 +518,7 @@ class AdminPanel {
         
         console.log('📊 Dados processados para importação:', processedData);
         }
+        ;
 
         const confirmButton = document.getElementById('confirmBulkImportButton');
         const originalText = confirmButton.innerHTML;

@@ -461,6 +461,45 @@ class AdminPanel {
         }
     }
 
+    // Método para obter nome da etapa baseado no número
+    getStageNameByNumber(stageNumber) {
+        const stageNames = {
+            1: 'Pedido criado',
+            2: 'Preparando para envio',
+            3: 'Vendedor enviou pedido',
+            4: 'Centro triagem Shenzhen',
+            5: 'Centro logístico Shenzhen',
+            6: 'Trânsito internacional',
+            7: 'Liberado exportação',
+            8: 'Saiu origem Shenzhen',
+            9: 'Chegou no Brasil',
+            10: 'Trânsito Curitiba/PR',
+            11: 'Alfândega importação - Aguardando pagamento (1ª tentativa)',
+            12: 'Alfândega importação - Aguardando pagamento (2ª tentativa)',
+            13: 'Liberado alfândega',
+            14: 'Sairá para entrega',
+            15: 'Em trânsito entrega',
+            16: 'Rota de entrega',
+            17: '1ª tentativa entrega - Aguardando pagamento',
+            18: '2ª tentativa entrega - Aguardando pagamento',
+            19: '3ª tentativa entrega - Aguardando pagamento',
+            20: 'Entregue'
+        };
+        return stageNames[stageNumber] || `Etapa ${stageNumber}`;
+    }
+
+    // Método para obter status de pagamento baseado na etapa
+    getPaymentStatusByStage(stageNumber) {
+        if (stageNumber === 11) return 'Aguardando pagamento da taxa alfandegária - 1ª tentativa';
+        if (stageNumber === 12) return 'Aguardando pagamento da taxa alfandegária - 2ª tentativa';
+        if (stageNumber >= 13 && stageNumber <= 16) return 'Taxa alfandegária paga';
+        if (stageNumber === 17) return '1ª tentativa de entrega - Aguardando pagamento';
+        if (stageNumber === 18) return '2ª tentativa de entrega - Aguardando pagamento';
+        if (stageNumber === 19) return '3ª tentativa de entrega - Aguardando pagamento';
+        if (stageNumber >= 20) return 'Todas as taxas pagas - Entregue';
+        return 'Em processamento';
+    }
+
     async confirmBulkImport() {
         if (!this.bulkParsedData) {
             alert('Nenhum dado para importar.');
@@ -1382,29 +1421,6 @@ class AdminPanel {
         
         this.renderPaginationControls();
         this.updateMassActionButtons();
-    }
-
-    getStageNameByNumber(stageNumber) {
-        const stages = {
-            1: 'Pedido criado',
-            2: 'Preparando para envio',
-            3: 'Vendedor enviou pedido',
-            4: 'Centro triagem Shenzhen',
-            5: 'Centro logístico Shenzhen',
-            6: 'Trânsito internacional',
-            7: 'Liberado exportação',
-            8: 'Saiu origem Shenzhen',
-            9: 'Chegou no Brasil',
-            10: 'Trânsito Curitiba/PR',
-            11: 'Alfândega importação',
-            12: 'Liberado alfândega',
-            13: 'Sairá para entrega',
-            14: 'Em trânsito entrega',
-            15: 'Rota de entrega',
-            16: 'Tentativa entrega'
-        };
-        
-        return stages[stageNumber] || 'Desconhecido';
     }
 
     updateLeadsCount() {

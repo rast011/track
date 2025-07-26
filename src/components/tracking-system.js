@@ -439,14 +439,30 @@ export class TrackingSystem {
         
         if (!statusIcon || !currentStatus) return;
         
-        if (this.trackingData.liberationPaid) {
+        // Obter etapa atual do lead do banco de dados
+        const currentStage = this.leadData ? this.leadData.etapa_atual : 11;
+        
+        // Atualizar status baseado na etapa atual
+        if (currentStage >= 20) {
+            statusIcon.innerHTML = '<i class="fas fa-check-circle"></i>';
+            statusIcon.className = 'status-icon delivered';
+            currentStatus.textContent = 'Pedido entregue';
+        } else if (currentStage >= 17 && currentStage <= 19) {
+            statusIcon.innerHTML = '<i class="fas fa-truck"></i>';
+            statusIcon.className = 'status-icon in-delivery';
+            currentStatus.textContent = `${currentStage - 16}ª tentativa de entrega - Aguardando pagamento`;
+        } else if (currentStage >= 13 && currentStage <= 16) {
             statusIcon.innerHTML = '<i class="fas fa-truck"></i>';
             statusIcon.className = 'status-icon in-transit';
             currentStatus.textContent = 'Em processo de entrega';
+        } else if (currentStage === 12) {
+            statusIcon.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+            statusIcon.className = 'status-icon in-transit';
+            currentStatus.textContent = 'Aguardando liberação aduaneira - 2ª tentativa';
         } else {
             statusIcon.innerHTML = '<i class="fas fa-clock"></i>';
             statusIcon.className = 'status-icon in-transit';
-            currentStatus.textContent = 'Aguardando liberação aduaneira';
+            currentStatus.textContent = 'Aguardando liberação aduaneira - 1ª tentativa';
         }
     }
 
@@ -456,10 +472,16 @@ export class TrackingSystem {
 
         timeline.innerHTML = '';
         
+        // Mostrar apenas etapas concluídas baseadas na etapa atual do lead
+        const currentStage = this.leadData ? this.leadData.etapa_atual : 11;
+        
         this.trackingData.steps.forEach((step, index) => {
-            const isLast = index === this.trackingData.steps.length - 1;
-            const timelineItem = this.createTimelineItem(step, isLast);
-            timeline.appendChild(timelineItem);
+            // Mostrar apenas etapas até a etapa atual
+            if (step.id <= currentStage) {
+                const isLast = step.id === currentStage;
+                const timelineItem = this.createTimelineItem(step, isLast);
+                timeline.appendChild(timelineItem);
+            }
         });
     }
 
@@ -467,12 +489,18 @@ export class TrackingSystem {
         const item = document.createElement('div');
         item.className = `timeline-item ${step.completed ? 'completed' : ''} ${isLast ? 'last' : ''}`;
 
-        const stepDate = new Date(step.date);
+        // Usar data real de atualização do lead ou data atual
+        const stepDate = this.leadData && this.leadData.updated_at ? 
+                        new Date(this.leadData.updated_at) : 
+                        new Date();
+        
         const dateStr = stepDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
         const timeStr = stepDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
         let buttonHtml = '';
-        if (step.needsLiberation && !this.trackingData.liberationPaid) {
+        // Mostrar botão de liberação apenas na etapa 11 ou 12 (alfândega)
+        const currentStage = this.leadData ? this.leadData.etapa_atual : 11;
+        if ((step.id === 11 || step.id === 12) && currentStage <= 12) {
             buttonHtml = `
                 <button class="liberation-button-timeline" data-step-id="${step.id}">
                     <i class="fas fa-unlock"></i> LIBERAR OBJETO
@@ -494,7 +522,7 @@ export class TrackingSystem {
             </div>
         `;
 
-        if (step.needsLiberation && !this.trackingData.liberationPaid) {
+        if ((step.id === 11 || step.id === 12) && currentStage <= 12) {
             const liberationButton = item.querySelector('.liberation-button-timeline');
             if (liberationButton) {
                 liberationButton.addEventListener('click', () => {

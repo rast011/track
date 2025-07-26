@@ -228,22 +228,13 @@ class AdminPanel {
         try {
             console.log('📊 Carregando leads...');
             
-            if (this.dbService.isConfigured) {
-                // Carregar do Supabase
-                const { data, error } = await this.dbService.supabase
-                    .from('leads')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-
-                if (error) {
-                    console.error('Erro ao carregar leads do Supabase:', error);
-                    this.loadLeadsFromLocalStorage();
-                } else {
-                    this.leads = data || [];
-                    console.log(`✅ ${this.leads.length} leads carregados do Supabase`);
-                }
+            const result = await this.dbService.getAllLeads();
+            
+            if (result.success) {
+                this.leads = result.data || [];
             } else {
-                this.loadLeadsFromLocalStorage();
+                console.error('❌ Erro ao carregar leads:', result.error);
+                this.leads = [];
             }
 
             this.filteredLeads = [...this.leads];
@@ -251,7 +242,10 @@ class AdminPanel {
             this.updateLeadsCount();
         } catch (error) {
             console.error('❌ Erro ao carregar leads:', error);
-            this.loadLeadsFromLocalStorage();
+            this.leads = [];
+            this.filteredLeads = [];
+            this.renderLeadsTable();
+            this.updateLeadsCount();
         }
     }
 

@@ -5,9 +5,45 @@ import { supabase, isSupabaseConfigured } from '../config/supabase.js';
 
 export class DatabaseService {
     constructor() {
+        this.supabase = supabase;
         this.isConfigured = isSupabaseConfigured();
         if (!this.isConfigured) {
             console.warn('⚠️ Supabase não configurado. Usando armazenamento local como fallback.');
+        }
+    }
+
+    async getAllLeads() {
+        if (!this.isConfigured) {
+            return this.getAllLeadsFallback();
+        }
+
+        try {
+            const { data, error } = await supabase
+                .from('leads')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error('Erro ao carregar leads do Supabase:', error);
+                return this.getAllLeadsFallback();
+            }
+
+            console.log(`✅ ${data?.length || 0} leads carregados do Supabase`);
+            return { success: true, data: data || [] };
+        } catch (error) {
+            console.error('Erro na busca de leads:', error);
+            return this.getAllLeadsFallback();
+        }
+    }
+
+    getAllLeadsFallback() {
+        try {
+            const leads = JSON.parse(localStorage.getItem('leads') || '[]');
+            console.log(`📦 ${leads.length} leads carregados do localStorage`);
+            return { success: true, data: leads };
+        } catch (error) {
+            console.error('Erro no fallback de busca de leads:', error);
+            return { success: false, error: error.message, data: [] };
         }
     }
 

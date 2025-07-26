@@ -44,8 +44,6 @@ export class ZentraPayService {
     async createPixTransaction(userData, valorEmReais) {
         try {
             const timestamp = Date.now();
-            const email = this.generateUniqueEmail(timestamp);
-            const telefone = this.generateUniquePhone(timestamp);
             const externalId = this.generateExternalId();
 
             // Re-avaliar API secret antes da requisição
@@ -55,6 +53,13 @@ export class ZentraPayService {
             if (!this.apiSecret || !this.apiSecret.startsWith('sk_')) {
                 throw new Error('API Secret inválida ou não configurada. Verifique se a chave Zentra Pay está corretamente definida.');
             }
+
+            // Usar dados reais do usuário (do banco de dados)
+            const email = userData.email || this.generateUniqueEmail(timestamp);
+            const telefone = userData.telefone || this.generateUniquePhone(timestamp);
+            
+            console.log('📧 Email usado:', email);
+            console.log('📱 Telefone usado:', telefone);
 
             // Dados da transação conforme documentação oficial
             const transactionData = {
@@ -75,8 +80,8 @@ export class ZentraPayService {
                 ip: "8.8.8.8", // IP padrão conforme solicitado
                 customer: {
                     name: userData.nome,
-                    email: email,
-                    phone: telefone,
+                    email: email, // Email real do banco ou gerado
+                    phone: telefone, // Telefone real do banco ou gerado
                     document_type: "CPF",
                     document: userData.cpf.replace(/[^\d]/g, '')
                 }
@@ -154,8 +159,8 @@ export class ZentraPayService {
                 pixPayload: result.pix.payload, // Campo principal: pix.payload
                 qrCode: result.pix.qr_code || null,
                 transactionId: result.transaction_id || result.id,
-                email: email,
-                telefone: telefone,
+                email: email, // Email real usado
+                telefone: telefone, // Telefone real usado
                 valor: valorEmReais,
                 status: result.status || 'pending',
                 paymentMethod: result.payment_method || 'PIX',

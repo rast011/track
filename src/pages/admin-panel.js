@@ -127,6 +127,9 @@ class AdminPanel {
         
         // Bulk import handlers
         this.setupBulkImportHandlers();
+        
+        // Setup filter button
+        this.setupFilterButton();
     }
     
     setupViewNavigation() {
@@ -1097,6 +1100,103 @@ class AdminPanel {
                 this.filterLeads();
             });
         }
+    }
+
+    setupFilterButton() {
+        const applyFiltersButton = document.getElementById('applyFiltersButton');
+        if (applyFiltersButton) {
+            applyFiltersButton.addEventListener('click', () => {
+                this.applyAllFilters();
+            });
+        }
+
+        // Add Enter key support to filter inputs
+        const filterInputs = [
+            document.getElementById('searchInput'),
+            document.getElementById('dateFilter'),
+            document.getElementById('stageFilter')
+        ];
+
+        filterInputs.forEach(input => {
+            if (input) {
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        this.applyAllFilters();
+                    }
+                });
+            }
+        });
+    }
+
+    applyAllFilters() {
+        console.log('🔍 Aplicando todos os filtros...');
+        
+        const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
+        const dateFilter = document.getElementById('dateFilter')?.value || '';
+        const stageFilter = document.getElementById('stageFilter')?.value || 'all';
+        
+        console.log('Filtros aplicados:', { searchTerm, dateFilter, stageFilter });
+        
+        let filteredLeads = [...this.leads];
+        
+        // Aplicar filtro de busca (nome ou CPF)
+        if (searchTerm) {
+            filteredLeads = filteredLeads.filter(lead => {
+                const name = (lead.nome_completo || '').toLowerCase();
+                const cpf = (lead.cpf || '').replace(/[^\d]/g, '');
+                const searchCpf = searchTerm.replace(/[^\d]/g, '');
+                
+                return name.includes(searchTerm) || cpf.includes(searchCpf);
+            });
+        }
+        
+        // Aplicar filtro de data
+        if (dateFilter) {
+            const filterDate = new Date(dateFilter);
+            filteredLeads = filteredLeads.filter(lead => {
+                if (!lead.created_at) return false;
+                const leadDate = new Date(lead.created_at);
+                return leadDate.toDateString() === filterDate.toDateString();
+            });
+        }
+        
+        // Aplicar filtro de etapa
+        if (stageFilter !== 'all') {
+            const targetStage = parseInt(stageFilter);
+            filteredLeads = filteredLeads.filter(lead => {
+                return lead.etapa_atual === targetStage;
+            });
+        }
+        
+        console.log(`📊 Filtros aplicados: ${filteredLeads.length} de ${this.leads.length} leads`);
+        
+        // Atualizar exibição
+        this.displayLeads(filteredLeads);
+        this.updateLeadsCount(filteredLeads.length);
+        
+        // Mostrar feedback visual
+        this.showFilterFeedback(filteredLeads.length, this.leads.length);
+    }
+
+    showFilterFeedback(filteredCount, totalCount) {
+        const button = document.getElementById('applyFiltersButton');
+        if (!button) return;
+        
+        const originalText = button.innerHTML;
+        
+        if (filteredCount === totalCount) {
+            button.innerHTML = '<i class="fas fa-check"></i> Todos os leads';
+            button.style.background = '#27ae60';
+        } else {
+            button.innerHTML = `<i class="fas fa-filter"></i> ${filteredCount} encontrados`;
+            button.style.background = '#3498db';
+        }
+        
+        setTimeout(() => {
+            button.innerHTML = originalText;
+            button.style.background = '';
+        }, 2000);
     }
 
     setupMassSelection() {

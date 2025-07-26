@@ -16,7 +16,10 @@ class AdminPanel {
         this.autoUpdateInterval = null;
         this.searchTerm = '';
         this.dateFilter = '';
+        this.stageFilter = '';
         this.currentView = 'leads'; // 'leads', 'addLead', 'bulkAdd'
+        this.currentPage = 1;
+        this.leadsPerPage = 50;
         
         this.init();
     }
@@ -115,6 +118,12 @@ class AdminPanel {
         
         // Formulários
         this.setupForms();
+        
+        // Seleção em massa
+        this.setupMassSelection();
+        
+        // Filtros por etapa
+        this.setupStageFilters();
     }
     
     setupViewNavigation() {
@@ -154,12 +163,90 @@ class AdminPanel {
             });
         }
         
+        // Configurar tabela de importação
+        this.setupBulkImportTable();
+        
         // Máscara de CPF
         const cpfInput = document.getElementById('addLeadCPF');
         if (cpfInput) {
             cpfInput.addEventListener('input', (e) => {
                 CPFValidator.applyCPFMask(e.target);
             });
+        }
+    }
+    
+    setupBulkImportTable() {
+        const tableBody = document.getElementById('bulkImportTableBody');
+        if (!tableBody) return;
+        
+        // Adicionar 10 linhas vazias inicialmente
+        for (let i = 0; i < 10; i++) {
+            this.addBulkImportRow();
+        }
+        
+        // Botão para adicionar mais linhas
+        const addRowButton = document.getElementById('addBulkRowButton');
+        if (addRowButton) {
+            addRowButton.addEventListener('click', () => {
+                this.addBulkImportRow();
+            });
+        }
+        
+        // Botão para limpar tabela
+        const clearTableButton = document.getElementById('clearBulkTableButton');
+        if (clearTableButton) {
+            clearTableButton.addEventListener('click', () => {
+                this.clearBulkImportTable();
+            });
+        }
+    }
+    
+    addBulkImportRow() {
+        const tableBody = document.getElementById('bulkImportTableBody');
+        if (!tableBody) return;
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><input type="text" class="bulk-input" placeholder="Nome completo" required></td>
+            <td><input type="email" class="bulk-input" placeholder="email@exemplo.com" required></td>
+            <td><input type="text" class="bulk-input" placeholder="(11) 99999-9999" required></td>
+            <td><input type="text" class="bulk-input cpf-input" placeholder="000.000.000-00" required maxlength="14"></td>
+            <td><input type="text" class="bulk-input" placeholder="Nome do produto"></td>
+            <td><input type="number" class="bulk-input" placeholder="0.00" step="0.01"></td>
+            <td><input type="text" class="bulk-input" placeholder="Rua/Avenida"></td>
+            <td><input type="text" class="bulk-input" placeholder="123"></td>
+            <td><input type="text" class="bulk-input" placeholder="Apto 1"></td>
+            <td><input type="text" class="bulk-input" placeholder="Centro"></td>
+            <td><input type="text" class="bulk-input" placeholder="00000-000"></td>
+            <td><input type="text" class="bulk-input" placeholder="São Paulo"></td>
+            <td><input type="text" class="bulk-input" placeholder="SP" maxlength="2"></td>
+            <td><input type="text" class="bulk-input" placeholder="BR" maxlength="2"></td>
+            <td>
+                <button type="button" class="action-button delete" onclick="this.closest('tr').remove()">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        `;
+        
+        tableBody.appendChild(row);
+        
+        // Aplicar máscara de CPF nos novos campos
+        const cpfInput = row.querySelector('.cpf-input');
+        if (cpfInput) {
+            cpfInput.addEventListener('input', (e) => {
+                CPFValidator.applyCPFMask(e.target);
+            });
+        }
+    }
+    
+    clearBulkImportTable() {
+        const tableBody = document.getElementById('bulkImportTableBody');
+        if (tableBody) {
+            tableBody.innerHTML = '';
+            // Adicionar 10 linhas vazias novamente
+            for (let i = 0; i < 10; i++) {
+                this.addBulkImportRow();
+            }
         }
     }
     
@@ -218,49 +305,141 @@ class AdminPanel {
     }
     
     async handleBulkAdd() {
-        const bulkData = document.getElementById('bulkLeadsData').value.trim();
-        
-        if (!bulkData) {
-            alert('Por favor, cole os dados dos leads');
+        const tableBody = document.getElementById('bulkImportTableBody');
+        if (!tableBody) {
+            alert('Tabela de importação não encontrada');
             return;
         }
         
-        const lines = bulkData.split('\n').filter(line => line.trim());
+        const rows = tableBody.querySelectorAll('tr');
         const leads = [];
+        let validRowCount = 0;
         
-        for (const line of lines) {
-            const parts = line.split(/\s+/);
-            if (parts.length >= 14) {
-                const leadData = this.parseBulkLine(parts);
-                if (leadData) {
-                    leads.push(leadData);
-                }
+        rows.forEach((row, index) => {
+            const inputs = row.querySelectorAll('.bulk-input');
+            if (inputs.length < 14) return;
+            
+            // Verificar se pelo menos os campos obrigatórios estão preenchidos
+            const nome = inputs[0].value.trim();
+            const email = inputs[1].value.trim();
+            const telefone = inputs[2].value.trim();
+            const cpf = inputs[3].value.trim();
+            
+            if (!nome || !email || !telefone || !cpf) {
+                // Pular linhas vazias ou incompletas
+                return;
             }
-        }
+            
+            validRowCount++;
+            
+            const leadData = this.formatBulkLeadData({
+                nome: nome,
+                email: email,
+                telefone: telefone,
+                cpf: cpf,
+                produto: inputs[4].value.trim() || 'Kit 12 caixas organizadoras + brinde',
+                valor: parseFloat(inputs[5].value) || 67.90,
+                endereco: inputs[6].value.trim(),
+                numero: inputs[7].value.trim(),
+                complemento: inputs[8].value.trim(),
+                bairro: inputs[9].value.trim(),
+                cep: inputs[10].value.trim(),
+                cidade: inputs[11].value.trim(),
+                estado: inputs[12].value.trim(),
+                pais: inputs[13].value.trim() || 'BR'
+            });
+            
+            if (leadData) {
+                leads.push(leadData);
+            }
+        });
         
         if (leads.length === 0) {
-            alert('Nenhum lead válido encontrado nos dados');
+            alert('Nenhum lead válido encontrado. Verifique se os campos obrigatórios (Nome, Email, Telefone, CPF) estão preenchidos.');
+            return;
+        }
+        
+        if (!confirm(`Importar ${leads.length} leads? Esta ação não pode ser desfeita.`)) {
             return;
         }
         
         try {
             let successCount = 0;
+            let errorCount = 0;
+            
             for (const leadData of leads) {
                 const result = await this.dbService.createLead(leadData);
                 if (result.success) {
                     successCount++;
+                } else {
+                    errorCount++;
+                    console.error('Erro ao criar lead:', result.error);
                 }
+                
+                // Pequeno delay para não sobrecarregar o banco
+                await new Promise(resolve => setTimeout(resolve, 100));
             }
             
             console.log(`✅ ${successCount} leads criados em massa`);
-            document.getElementById('bulkLeadsData').value = '';
+            this.clearBulkImportTable();
             this.loadLeads();
             this.showView('leads');
-            alert(`${successCount} de ${leads.length} leads criados com sucesso!`);
+            
+            if (errorCount > 0) {
+                alert(`${successCount} leads criados com sucesso!\n${errorCount} leads falharam (possível duplicação de CPF).`);
+            } else {
+                alert(`${successCount} leads criados com sucesso!`);
+            }
         } catch (error) {
             console.error('❌ Erro na criação em massa:', error);
             alert('Erro na criação em massa: ' + error.message);
         }
+    }
+    
+    formatBulkLeadData(formData) {
+        try {
+            const enderecoCompleto = this.formatCompleteAddress(formData);
+            
+            return {
+                nome_completo: formData.nome,
+                cpf: formData.cpf.replace(/[^\d]/g, ''),
+                email: formData.email,
+                telefone: formData.telefone,
+                endereco: enderecoCompleto,
+                produtos: [{
+                    nome: formData.produto,
+                    preco: parseFloat(formData.valor),
+                    imagem: '/traduza-have-you-propose copy.png'
+                }],
+                valor_total: parseFloat(formData.valor),
+                meio_pagamento: 'PIX',
+                origem: 'direto',
+                etapa_atual: 1,
+                status_pagamento: 'pendente',
+                data_compra: new Date().toISOString(),
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
+        } catch (error) {
+            console.error('❌ Erro ao formatar dados do lead:', error);
+            return null;
+        }
+    }
+    
+    formatCompleteAddress(formData) {
+        const parts = [];
+        
+        if (formData.endereco) parts.push(formData.endereco);
+        if (formData.numero) parts.push(formData.numero);
+        if (formData.complemento) parts.push(formData.complemento);
+        if (formData.bairro) parts.push(formData.bairro);
+        if (formData.cep) parts.push(formData.cep);
+        if (formData.cidade && formData.estado) {
+            parts.push(`${formData.cidade}/${formData.estado}`);
+        }
+        if (formData.pais) parts.push(formData.pais);
+        
+        return parts.join(', ');
     }
     
     getAddLeadFormData() {
@@ -433,6 +612,159 @@ class AdminPanel {
         }
     }
 
+    setupMassSelection() {
+        const selectAllCheckbox = document.getElementById('selectAllLeads');
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', (e) => {
+                this.toggleSelectAll(e.target.checked);
+            });
+        }
+        
+        // Botões de ação em massa
+        const massActionButtons = {
+            'massNextStage': () => this.massNextStage(),
+            'massPrevStage': () => this.massPrevStage(),
+            'massDeleteLeads': () => this.massDeleteLeads(),
+            'massSetStage': () => this.massSetStage()
+        };
+        
+        Object.entries(massActionButtons).forEach(([id, handler]) => {
+            const button = document.getElementById(id);
+            if (button) {
+                button.addEventListener('click', handler);
+            }
+        });
+    }
+    
+    toggleSelectAll(checked) {
+        const checkboxes = document.querySelectorAll('.lead-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = checked;
+        });
+        this.updateMassActionButtons();
+    }
+    
+    updateMassActionButtons() {
+        const selectedCount = document.querySelectorAll('.lead-checkbox:checked').length;
+        const massActionButtons = document.querySelectorAll('.mass-action-button');
+        
+        massActionButtons.forEach(button => {
+            button.disabled = selectedCount === 0;
+            button.style.opacity = selectedCount === 0 ? '0.5' : '1';
+        });
+        
+        const selectedCountDisplay = document.getElementById('selectedCount');
+        if (selectedCountDisplay) {
+            selectedCountDisplay.textContent = `${selectedCount} selecionados`;
+        }
+    }
+    
+    getSelectedLeads() {
+        const selectedLeads = [];
+        const checkboxes = document.querySelectorAll('.lead-checkbox:checked');
+        
+        checkboxes.forEach(checkbox => {
+            const leadId = checkbox.dataset.leadId;
+            const lead = this.findLeadById(leadId);
+            if (lead) {
+                selectedLeads.push(lead);
+            }
+        });
+        
+        return selectedLeads;
+    }
+    
+    async massNextStage() {
+        const selectedLeads = this.getSelectedLeads();
+        if (selectedLeads.length === 0) return;
+        
+        if (!confirm(`Avançar ${selectedLeads.length} leads para a próxima etapa?`)) return;
+        
+        for (const lead of selectedLeads) {
+            const currentStage = lead.etapa_atual || 1;
+            if (currentStage < 16) {
+                await this.updateLeadStage(lead.id || lead.cpf, currentStage + 1);
+            }
+        }
+        
+        this.loadLeads();
+        console.log(`✅ ${selectedLeads.length} leads avançados`);
+    }
+    
+    async massPrevStage() {
+        const selectedLeads = this.getSelectedLeads();
+        if (selectedLeads.length === 0) return;
+        
+        if (!confirm(`Voltar ${selectedLeads.length} leads para a etapa anterior?`)) return;
+        
+        for (const lead of selectedLeads) {
+            const currentStage = lead.etapa_atual || 1;
+            if (currentStage > 1) {
+                await this.updateLeadStage(lead.id || lead.cpf, currentStage - 1);
+            }
+        }
+        
+        this.loadLeads();
+        console.log(`✅ ${selectedLeads.length} leads voltaram uma etapa`);
+    }
+    
+    async massDeleteLeads() {
+        const selectedLeads = this.getSelectedLeads();
+        if (selectedLeads.length === 0) return;
+        
+        if (!confirm(`ATENÇÃO: Excluir ${selectedLeads.length} leads selecionados? Esta ação é IRREVERSÍVEL.`)) return;
+        
+        for (const lead of selectedLeads) {
+            await this.deleteLead(lead.id || lead.cpf);
+        }
+        
+        this.loadLeads();
+        console.log(`✅ ${selectedLeads.length} leads excluídos`);
+    }
+    
+    async massSetStage() {
+        const selectedLeads = this.getSelectedLeads();
+        if (selectedLeads.length === 0) return;
+        
+        const stageNumber = prompt('Digite o número da etapa (1-16):');
+        if (!stageNumber || isNaN(stageNumber)) return;
+        
+        const stage = parseInt(stageNumber);
+        if (stage < 1 || stage > 16) {
+            alert('Etapa deve estar entre 1 e 16');
+            return;
+        }
+        
+        if (!confirm(`Mover ${selectedLeads.length} leads para a etapa ${stage}?`)) return;
+        
+        for (const lead of selectedLeads) {
+            await this.updateLeadStage(lead.id || lead.cpf, stage);
+        }
+        
+        this.loadLeads();
+        console.log(`✅ ${selectedLeads.length} leads movidos para etapa ${stage}`);
+    }
+    
+    setupStageFilters() {
+        const stageFilterButtons = document.querySelectorAll('.stage-filter-button');
+        stageFilterButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                const stage = e.target.dataset.stage;
+                this.filterByStage(stage);
+                
+                // Atualizar botões ativos
+                stageFilterButtons.forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+            });
+        });
+    }
+    
+    filterByStage(stage) {
+        this.stageFilter = stage;
+        this.currentPage = 1;
+        this.filterLeads();
+    }
+
     async loadLeads() {
         console.log('📊 Carregando leads do banco de dados...');
         
@@ -484,11 +816,60 @@ class AdminPanel {
             // Filtro por data
             const matchesDate = !this.dateFilter || 
                 new Date(lead.created_at).toDateString() === new Date(this.dateFilter).toDateString();
+            
+            // Filtro por etapa
+            const matchesStage = !this.stageFilter || this.stageFilter === 'all' ||
+                lead.etapa_atual === parseInt(this.stageFilter);
 
-            return matchesSearch && matchesDate;
+            return matchesSearch && matchesDate && matchesStage;
         });
 
         this.renderLeadsTable();
+        this.setupPagination();
+    }
+
+    setupPagination() {
+        this.currentPage = 1;
+        this.leadsPerPage = 50;
+        this.totalPages = Math.ceil(this.filteredLeads.length / this.leadsPerPage);
+        
+        this.renderPaginationControls();
+    }
+    
+    renderPaginationControls() {
+        const paginationContainer = document.getElementById('paginationControls');
+        if (!paginationContainer) return;
+        
+        const totalPages = Math.ceil(this.filteredLeads.length / this.leadsPerPage);
+        
+        paginationContainer.innerHTML = `
+            <div class="pagination-info">
+                Página ${this.currentPage} de ${totalPages} (${this.filteredLeads.length} leads)
+            </div>
+            <div class="pagination-buttons">
+                <button class="control-button" ${this.currentPage === 1 ? 'disabled' : ''} onclick="adminPanel.goToPage(${this.currentPage - 1})">
+                    <i class="fas fa-chevron-left"></i> Anterior
+                </button>
+                <button class="control-button" ${this.currentPage === totalPages ? 'disabled' : ''} onclick="adminPanel.goToPage(${this.currentPage + 1})">
+                    Próxima <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        `;
+    }
+    
+    goToPage(page) {
+        const totalPages = Math.ceil(this.filteredLeads.length / this.leadsPerPage);
+        if (page < 1 || page > totalPages) return;
+        
+        this.currentPage = page;
+        this.renderLeadsTable();
+        this.renderPaginationControls();
+    }
+    
+    getPaginatedLeads() {
+        const startIndex = (this.currentPage - 1) * this.leadsPerPage;
+        const endIndex = startIndex + this.leadsPerPage;
+        return this.filteredLeads.slice(startIndex, endIndex);
     }
 
     renderLeadsTable() {
@@ -504,14 +885,20 @@ class AdminPanel {
         }
 
         if (emptyState) emptyState.style.display = 'none';
+        
+        // Obter leads da página atual
+        const paginatedLeads = this.getPaginatedLeads();
 
-        tableBody.innerHTML = this.filteredLeads.map(lead => {
+        tableBody.innerHTML = paginatedLeads.map(lead => {
             const createdDate = new Date(lead.created_at).toLocaleDateString('pt-BR');
             const updatedDate = new Date(lead.updated_at).toLocaleString('pt-BR');
             const stageName = this.getStageNameByNumber(lead.etapa_atual || 1);
             
             return `
                 <tr>
+                    <td>
+                        <input type="checkbox" class="lead-checkbox" data-lead-id="${lead.id || lead.cpf}" onchange="adminPanel.updateMassActionButtons()">
+                    </td>
                     <td>${lead.nome_completo || 'Nome não informado'}</td>
                     <td>${CPFValidator.formatCPF(lead.cpf || '')}</td>
                     <td>${lead.email || 'N/A'}</td>
@@ -544,6 +931,9 @@ class AdminPanel {
                 </tr>
             `;
         }).join('');
+        
+        this.renderPaginationControls();
+        this.updateMassActionButtons();
     }
 
     getStageNameByNumber(stageNumber) {

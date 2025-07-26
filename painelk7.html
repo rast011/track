@@ -747,22 +747,47 @@
                         Importação em Massa
                     </h3>
                     
-                    <p style="margin-bottom: 20px; color: #666; line-height: 1.6;">
-                        Cole os dados dos leads separados por espaços, um lead por linha.<br>
-                        <strong>Formato:</strong> Nome Email Telefone CPF Produto Valor Endereço Número Complemento Bairro CEP Cidade Estado País
-                    </p>
+                    <div class="bulk-import-instructions">
+                        <h4>Instruções de Importação</h4>
+                        <p>Preencha a tabela abaixo com os dados dos leads. Os campos <strong>Nome, Email, Telefone e CPF</strong> são obrigatórios.</p>
+                        <p>Você pode copiar e colar dados diretamente de uma planilha Excel/Google Sheets.</p>
+                    </div>
                     
                     <form id="bulkAddForm">
-                        <div class="form-group">
-                            <label for="bulkLeadsData">Dados dos Leads</label>
-                            <textarea 
-                                id="bulkLeadsData" 
-                                class="bulk-textarea" 
-                                placeholder="Exemplo:
-Laryssa Barreto Alves lary.b.alves@gmail.com 5521964639100 14417943796 Kit 262 Cores Canetinhas 47,39 Estrada do Engenho 1640 Olaria 21031485 Rio de Janeiro RJ BR
-ERIK COSTA ROBIM erikcosta333@gmail.com 5519994168317 49180618855 Kit 262 Cores Canetinhas 71,86 Antônio guiraldo 114 Casa Jardim regente 13336354 Indaiatuba SP BR"
-                                required>
-                            </textarea>
+                        <div class="bulk-import-controls">
+                            <button type="button" class="control-button" id="addBulkRowButton">
+                                <i class="fas fa-plus"></i> Adicionar Linha
+                            </button>
+                            <button type="button" class="control-button danger" id="clearBulkTableButton">
+                                <i class="fas fa-trash"></i> Limpar Tabela
+                            </button>
+                        </div>
+                        
+                        <div class="bulk-import-table-container">
+                            <table class="bulk-import-table">
+                                <thead>
+                                    <tr>
+                                        <th>Nome do Cliente *</th>
+                                        <th>Email do Cliente *</th>
+                                        <th>Telefone do Cliente *</th>
+                                        <th>Documento (CPF) *</th>
+                                        <th>Produto</th>
+                                        <th>Valor Total</th>
+                                        <th>Endereço</th>
+                                        <th>Número</th>
+                                        <th>Complemento</th>
+                                        <th>Bairro</th>
+                                        <th>CEP</th>
+                                        <th>Cidade</th>
+                                        <th>Estado</th>
+                                        <th>País</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bulkImportTableBody">
+                                    <!-- Linhas serão adicionadas dinamicamente -->
+                                </tbody>
+                            </table>
                         </div>
                         
                         <button type="submit" class="submit-button">
@@ -800,14 +825,67 @@ ERIK COSTA ROBIM erikcosta333@gmail.com 5519994168317 49180618855 Kit 262 Cores 
                         </div>
                         
                         <div class="control-group">
-                            <label>Ações em Massa</label>
-                            <button class="control-button" id="nextAllButton">
-                                <i class="fas fa-forward"></i> Avançar Todos
+                            <label>Filtrar por Etapa</label>
+                            <select class="control-input" id="stageFilter">
+                                <option value="all">Todas as etapas</option>
+                                <option value="1">1 - Pedido criado</option>
+                                <option value="2">2 - Preparando para envio</option>
+                                <option value="3">3 - Vendedor enviou pedido</option>
+                                <option value="4">4 - Centro triagem Shenzhen</option>
+                                <option value="5">5 - Centro logístico Shenzhen</option>
+                                <option value="6">6 - Trânsito internacional</option>
+                                <option value="7">7 - Liberado exportação</option>
+                                <option value="8">8 - Saiu origem Shenzhen</option>
+                                <option value="9">9 - Chegou no Brasil</option>
+                                <option value="10">10 - Trânsito Curitiba/PR</option>
+                                <option value="11">11 - Alfândega importação</option>
+                                <option value="12">12 - Liberado alfândega</option>
+                                <option value="13">13 - Sairá para entrega</option>
+                                <option value="14">14 - Em trânsito entrega</option>
+                                <option value="15">15 - Rota de entrega</option>
+                                <option value="16">16 - Tentativa entrega</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Seleção em Massa -->
+                    <div class="mass-selection-section">
+                        <h4 class="section-subtitle">
+                            <i class="fas fa-check-square"></i>
+                            Ações em Massa
+                        </h4>
+                        
+                        <div class="mass-selection-info">
+                            <span id="selectedCount">0 selecionados</span>
+                        </div>
+                        
+                        <div class="controls-grid">
+                            <button class="control-button mass-action-button" id="massNextStage" disabled>
+                                <i class="fas fa-forward"></i> Avançar Selecionados
+                            </button>
+                            
+                            <button class="control-button mass-action-button" id="massPrevStage" disabled>
+                                <i class="fas fa-backward"></i> Voltar Selecionados
+                            </button>
+                            
+                            <button class="control-button mass-action-button" id="massSetStage" disabled>
+                                <i class="fas fa-edit"></i> Definir Etapa
+                            </button>
+                            
+                            <button class="control-button danger mass-action-button" id="massDeleteLeads" disabled>
+                                <i class="fas fa-trash"></i> Excluir Selecionados
                             </button>
                         </div>
                     </div>
 
                     <div class="controls-grid">
+                        <div class="control-group">
+                            <label>Ações em Massa</label>
+                            <button class="control-button" id="nextAllButton">
+                                <i class="fas fa-forward"></i> Avançar Todos
+                            </button>
+                        </div>
+
                         <button class="control-button" id="prevAllButton">
                             <i class="fas fa-backward"></i> Voltar Todos
                         </button>
@@ -839,6 +917,9 @@ ERIK COSTA ROBIM erikcosta333@gmail.com 5519994168317 49180618855 Kit 262 Cores 
                         <table class="leads-table" id="leadsTable">
                             <thead>
                                 <tr>
+                                    <th>
+                                        <input type="checkbox" id="selectAllLeads" onchange="adminPanel.toggleSelectAll(this.checked)">
+                                    </th>
                                     <th>Nome</th>
                                     <th>CPF</th>
                                     <th>Email</th>
@@ -855,6 +936,11 @@ ERIK COSTA ROBIM erikcosta333@gmail.com 5519994168317 49180618855 Kit 262 Cores 
                                 <!-- Leads serão inseridos aqui -->
                             </tbody>
                         </table>
+                        
+                        <!-- Paginação -->
+                        <div class="pagination-section" id="paginationControls">
+                            <!-- Controles de paginação serão inseridos aqui -->
+                        </div>
                         
                         <div class="empty-state" id="emptyState" style="display: none;">
                             <i class="fas fa-inbox"></i>
@@ -923,6 +1009,11 @@ ERIK COSTA ROBIM erikcosta333@gmail.com 5519994168317 49180618855 Kit 262 Cores 
                         <option value="15">15 - Rota de entrega</option>
                         <option value="16">16 - Tentativa entrega</option>
                     </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Data e Hora da Etapa</label>
+                    <input type="datetime-local" id="editStageDateTime" class="control-input">
                 </div>
                 
                 <div class="controls-grid">

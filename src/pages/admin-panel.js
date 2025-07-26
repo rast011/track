@@ -861,6 +861,7 @@ class AdminPanel {
                 valor_total: parseFloat(formData.valor),
                 meio_pagamento: 'PIX',
                 origem: 'direto',
+                origem: 'direto',
                 etapa_atual: 1,
                 status_pagamento: 'pendente',
                 data_compra: new Date().toISOString(),

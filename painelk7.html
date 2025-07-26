@@ -874,36 +874,6 @@
                         </div>
                     </div>
 
-                    <!-- Seleção em Massa -->
-                    <div class="mass-selection-section">
-                        <h4 class="section-subtitle">
-                            <i class="fas fa-check-square"></i>
-                            Ações em Massa
-                        </h4>
-                        
-                        <div class="mass-selection-info">
-                            <span id="selectedCount">0 selecionados</span>
-                        </div>
-                        
-                        <div class="controls-grid">
-                            <button class="control-button mass-action-button" id="massNextStage" disabled>
-                                <i class="fas fa-forward"></i> Avançar Selecionados
-                            </button>
-                            
-                            <button class="control-button mass-action-button" id="massPrevStage" disabled>
-                                <i class="fas fa-backward"></i> Voltar Selecionados
-                            </button>
-                            
-                            <button class="control-button mass-action-button" id="massSetStage" disabled>
-                                <i class="fas fa-edit"></i> Definir Etapa
-                            </button>
-                            
-                            <button class="control-button danger mass-action-button" id="massDeleteLeads" disabled>
-                                <i class="fas fa-trash"></i> Excluir Selecionados
-                            </button>
-                        </div>
-                    </div>
-
                     <div class="controls-grid">
                         <div class="control-group">
                             <label>Ações em Massa</label>
@@ -926,6 +896,68 @@
                         
                         <div class="status-indicator auto" id="systemStatus">
                             <i class="fas fa-robot"></i> Modo Automático
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ações em Massa -->
+                <div class="mass-actions-container">
+                    <h3 class="section-title">
+                        <i class="fas fa-check-square"></i>
+                        Ações em Massa
+                    </h3>
+                    
+                    <div class="mass-selection-info">
+                        <span id="selectedCount">0 selecionados</span>
+                    </div>
+                    
+                    <div class="mass-actions-grid">
+                        <div class="mass-action-item">
+                            <button class="control-button mass-action-button" id="massNextStage" disabled>
+                                <i class="fas fa-forward"></i> 
+                                <span class="action-text">Avançar Selecionados</span>
+                                <span class="action-count" id="massNextCount">(0 leads)</span>
+                            </button>
+                            <div class="schedule-option" style="display: none;">
+                                <label>Agendar para:</label>
+                                <input type="datetime-local" class="schedule-input" id="scheduleNext">
+                            </div>
+                        </div>
+                        
+                        <div class="mass-action-item">
+                            <button class="control-button mass-action-button" id="massPrevStage" disabled>
+                                <i class="fas fa-backward"></i>
+                                <span class="action-text">Voltar Selecionados</span>
+                                <span class="action-count" id="massPrevCount">(0 leads)</span>
+                            </button>
+                            <div class="schedule-option" style="display: none;">
+                                <label>Agendar para:</label>
+                                <input type="datetime-local" class="schedule-input" id="schedulePrev">
+                            </div>
+                        </div>
+                        
+                        <div class="mass-action-item">
+                            <button class="control-button mass-action-button" id="massSetStage" disabled>
+                                <i class="fas fa-edit"></i>
+                                <span class="action-text">Definir Etapa</span>
+                                <span class="action-count" id="massSetCount">(0 leads)</span>
+                            </button>
+                            <div class="schedule-option" style="display: none;">
+                                <label>Agendar para:</label>
+                                <input type="datetime-local" class="schedule-input" id="scheduleSet">
+                            </div>
+                        </div>
+                        
+                        <div class="mass-action-item">
+                            <button class="control-button danger mass-action-button" id="massDeleteLeads" disabled>
+                                <i class="fas fa-trash"></i>
+                                <span class="action-text">Excluir Selecionados</span>
+                                <span class="action-count" id="massDeleteCount">(0 leads)</span>
+                            </button>
+                            <div class="schedule-option" style="display: none;">
+                                <label>Agendar para:</label>
+                                <input type="datetime-local" class="schedule-input" id="scheduleDelete">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1051,6 +1083,37 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Mass Action Confirmation Modal -->
+    <div class="modal" id="massActionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Confirmar Ação em Massa</h3>
+                <button class="close-button" id="closeMassActionModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <p id="massActionMessage">Tem certeza que deseja executar esta ação em massa?</p>
+                <div class="mass-action-details" id="massActionDetails">
+                    <!-- Details will be populated dynamically -->
+                </div>
+                <div class="schedule-confirmation" id="scheduleConfirmation" style="display: none;">
+                    <p><strong>Agendado para:</strong> <span id="scheduledDateTime"></span></p>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="control-button" id="cancelMassAction">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button class="control-button success" id="confirmMassAction">
+                    <i class="fas fa-check"></i> Confirmar
+                </button>
+            </div>
         </div>
     </div>
 

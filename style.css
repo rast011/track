@@ -2360,8 +2360,24 @@ body {
         .bulk-textarea {
             min-height: 200px;
             font-family: monospace;
-            font-size: 0.8rem;
+            font-size: 13px;
             line-height: 1.4;
+            resize: vertical;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 15px;
+            width: 100%;
+        }
+        
+        .bulk-textarea:focus {
+            outline: none;
+            border-color: #345C7A;
+            box-shadow: 0 0 0 3px rgba(52, 92, 122, 0.1);
+        }
+        
+        .bulk-textarea::placeholder {
+            color: #999;
+            font-style: italic;
         }
         
         /* Bulk Import Table Styles */

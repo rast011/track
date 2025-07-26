@@ -124,6 +124,9 @@ class AdminPanel {
         
         // Filtros por etapa
         this.setupStageFilters();
+        
+        // Bulk import handlers
+        this.setupBulkImportHandlers();
     }
     
     setupViewNavigation() {
@@ -173,6 +176,450 @@ class AdminPanel {
                 CPFValidator.applyCPFMask(e.target);
             });
         }
+    }
+    
+    setupBulkImportHandlers() {
+        const previewButton = document.getElementById('previewBulkDataButton');
+        const clearButton = document.getElementById('clearBulkDataButton');
+        const editButton = document.getElementById('editBulkDataButton');
+        const confirmButton = document.getElementById('confirmBulkImportButton');
+        const textarea = document.getElementById('bulkDataTextarea');
+
+        if (previewButton) {
+            previewButton.addEventListener('click', () => {
+                this.previewBulkData();
+            });
+        }
+
+        if (clearButton) {
+            clearButton.addEventListener('click', () => {
+                this.clearBulkData();
+            });
+        }
+
+        if (editButton) {
+            editButton.addEventListener('click', () => {
+                this.editBulkData();
+            });
+        }
+
+        if (confirmButton) {
+            confirmButton.addEventListener('click', () => {
+                this.confirmBulkImport();
+            });
+        }
+
+        // Auto-resize textarea
+        if (textarea) {
+            textarea.addEventListener('input', () => {
+                textarea.style.height = 'auto';
+                textarea.style.height = Math.max(200, textarea.scrollHeight) + 'px';
+            });
+        }
+    }
+
+    previewBulkData() {
+        const textarea = document.getElementById('bulkDataTextarea');
+        const previewSection = document.getElementById('bulkPreviewSection');
+        const previewContainer = document.getElementById('bulkPreviewContainer');
+        const confirmButton = document.getElementById('confirmBulkImportButton');
+        const previewSummary = document.getElementById('previewSummary');
+
+        if (!textarea || !textarea.value.trim()) {
+            alert('Por favor, cole os dados na caixa de texto primeiro.');
+            return;
+        }
+
+        try {
+            const parsedData = this.parseBulkData(textarea.value);
+            
+            if (parsedData.length === 0) {
+                alert('Nenhum dado válido encontrado. Verifique o formato dos dados.');
+                return;
+            }
+
+            // Show preview section
+            previewSection.style.display = 'block';
+            
+            // Generate preview table
+            const previewTable = this.generatePreviewTable(parsedData);
+            previewContainer.innerHTML = previewTable;
+            
+            // Show confirm button
+            confirmButton.style.display = 'inline-flex';
+            
+            // Update summary
+            const validCount = parsedData.filter(row => row.isValid).length;
+            const invalidCount = parsedData.length - validCount;
+            previewSummary.innerHTML = `
+                <i class="fas fa-info-circle"></i> 
+                ${validCount} registros válidos, ${invalidCount} com erros
+            `;
+            
+            // Store parsed data for later use
+            this.bulkParsedData = parsedData;
+            
+            // Scroll to preview
+            previewSection.scrollIntoView({ behavior: 'smooth' });
+            
+        } catch (error) {
+            console.error('Erro ao processar dados:', error);
+            alert('Erro ao processar os dados. Verifique o formato e tente novamente.');
+        }
+    }
+
+    parseBulkData(rawData) {
+        const lines = rawData.trim().split('\n');
+        const parsedData = [];
+        
+        lines.forEach((line, index) => {
+            if (!line.trim()) return; // Skip empty lines
+            
+            // Split by tab first, then by multiple spaces if no tabs
+            let fields = line.split('\t');
+            if (fields.length === 1) {
+                fields = line.split(/\s{2,}/); // Split by 2 or more spaces
+            }
+            
+            // If still only one field, try single space (less reliable)
+            if (fields.length === 1) {
+                fields = line.split(' ');
+            }
+            
+            // Expected order: Nome, Email, Telefone, CPF, Produto, Valor, Rua, Número, Complemento, Bairro, CEP, Cidade, Estado, País
+            const rowData = {
+                lineNumber: index + 1,
+                nome_completo: (fields[0] || '').trim(),
+                email: (fields[1] || '').trim(),
+                telefone: (fields[2] || '').trim(),
+                cpf: (fields[3] || '').trim().replace(/[^\d]/g, ''),
+                produto: (fields[4] || 'Kit 12 caixas organizadoras + brinde').trim(),
+                valor_total: this.parseValue(fields[5]),
+                endereco_rua: (fields[6] || '').trim(),
+                endereco_numero: (fields[7] || '').trim(),
+                endereco_complemento: (fields[8] || '').trim(),
+                endereco_bairro: (fields[9] || '').trim(),
+                endereco_cep: (fields[10] || '').trim().replace(/[^\d]/g, ''),
+                endereco_cidade: (fields[11] || '').trim(),
+                endereco_estado: (fields[12] || '').trim(),
+                endereco_pais: (fields[13] || 'BR').trim(),
+                isValid: false,
+                errors: []
+            };
+            
+            // Validate required fields
+            if (!rowData.nome_completo) rowData.errors.push('Nome obrigatório');
+            if (!rowData.email || !this.isValidEmail(rowData.email)) rowData.errors.push('Email inválido');
+            if (!rowData.telefone) rowData.errors.push('Telefone obrigatório');
+            if (!rowData.cpf || rowData.cpf.length !== 11) rowData.errors.push('CPF inválido');
+            
+            rowData.isValid = rowData.errors.length === 0;
+            
+            // Format full address
+            const addressParts = [
+                rowData.endereco_rua,
+                rowData.endereco_numero,
+                rowData.endereco_complemento,
+                rowData.endereco_bairro,
+                rowData.endereco_cep,
+                rowData.endereco_cidade,
+                rowData.endereco_estado,
+                rowData.endereco_pais
+            ].filter(part => part);
+            
+            rowData.endereco = addressParts.join(', ');
+            
+            parsedData.push(rowData);
+        });
+        
+        return parsedData;
+    }
+
+    parseValue(valueStr) {
+        if (!valueStr) return 0;
+        
+        // Remove currency symbols and convert comma to dot
+        const cleanValue = valueStr.toString()
+            .replace(/[R$\s]/g, '')
+            .replace(',', '.');
+        
+        const parsed = parseFloat(cleanValue);
+        return isNaN(parsed) ? 0 : parsed;
+    }
+
+    isValidEmail(email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    }
+
+    generatePreviewTable(parsedData) {
+        const validData = parsedData.filter(row => row.isValid);
+        const invalidData = parsedData.filter(row => !row.isValid);
+        
+        let html = `
+            <div style="max-height: 400px; overflow-y: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                    <thead style="background: #345C7A; color: white; position: sticky; top: 0;">
+                        <tr>
+                            <th style="padding: 8px; border: 1px solid #ddd;">Nome Completo</th>
+                            <th style="padding: 8px; border: 1px solid #ddd;">E-mail</th>
+                            <th style="padding: 8px; border: 1px solid #ddd;">Telefone</th>
+                            <th style="padding: 8px; border: 1px solid #ddd;">CPF</th>
+                            <th style="padding: 8px; border: 1px solid #ddd;">Produto</th>
+                            <th style="padding: 8px; border: 1px solid #ddd;">Valor</th>
+                            <th style="padding: 8px; border: 1px solid #ddd;">Endereço Completo</th>
+                            <th style="padding: 8px; border: 1px solid #ddd;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        // Add valid rows
+        validData.forEach(row => {
+            html += `
+                <tr style="background: #f8fff8;">
+                    <td style="padding: 6px; border: 1px solid #ddd;">${row.nome_completo}</td>
+                    <td style="padding: 6px; border: 1px solid #ddd;">${row.email}</td>
+                    <td style="padding: 6px; border: 1px solid #ddd;">${this.formatPhone(row.telefone)}</td>
+                    <td style="padding: 6px; border: 1px solid #ddd;">${this.formatCPF(row.cpf)}</td>
+                    <td style="padding: 6px; border: 1px solid #ddd;">${row.produto}</td>
+                    <td style="padding: 6px; border: 1px solid #ddd;">R$ ${row.valor_total.toFixed(2).replace('.', ',')}</td>
+                    <td style="padding: 6px; border: 1px solid #ddd; max-width: 200px; word-wrap: break-word;">${row.endereco}</td>
+                    <td style="padding: 6px; border: 1px solid #ddd; color: #27ae60;">✅ Válido</td>
+                </tr>
+            `;
+        });
+        
+        // Add invalid rows
+        invalidData.forEach(row => {
+            html += `
+                <tr style="background: #fff8f8;">
+                    <td style="padding: 6px; border: 1px solid #ddd;">${row.nome_completo}</td>
+                    <td style="padding: 6px; border: 1px solid #ddd;">${row.email}</td>
+                    <td style="padding: 6px; border: 1px solid #ddd;">${row.telefone}</td>
+                    <td style="padding: 6px; border: 1px solid #ddd;">${row.cpf}</td>
+                    <td style="padding: 6px; border: 1px solid #ddd;">${row.produto}</td>
+                    <td style="padding: 6px; border: 1px solid #ddd;">R$ ${row.valor_total.toFixed(2).replace('.', ',')}</td>
+                    <td style="padding: 6px; border: 1px solid #ddd;">${row.endereco}</td>
+                    <td style="padding: 6px; border: 1px solid #ddd; color: #e74c3c;">❌ ${row.errors.join(', ')}</td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+        
+        return html;
+    }
+
+    formatPhone(phone) {
+        if (!phone) return '';
+        
+        const cleanPhone = phone.replace(/[^\d]/g, '');
+        
+        if (cleanPhone.length === 13 && cleanPhone.startsWith('55')) {
+            // Already has country code
+            return `+${cleanPhone.slice(0, 2)} ${cleanPhone.slice(2, 4)} ${cleanPhone.slice(4, 9)}-${cleanPhone.slice(9)}`;
+        } else if (cleanPhone.length === 11) {
+            // Add country code
+            return `+55 ${cleanPhone.slice(0, 2)} ${cleanPhone.slice(2, 7)}-${cleanPhone.slice(7)}`;
+        }
+        
+        return phone;
+    }
+
+    formatCPF(cpf) {
+        if (!cpf || cpf.length !== 11) return cpf;
+        return `${cpf.slice(0, 3)}.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-${cpf.slice(9)}`;
+    }
+
+    clearBulkData() {
+        const textarea = document.getElementById('bulkDataTextarea');
+        const previewSection = document.getElementById('bulkPreviewSection');
+        const resultsSection = document.getElementById('bulkResultsSection');
+        
+        if (textarea) textarea.value = '';
+        if (previewSection) previewSection.style.display = 'none';
+        if (resultsSection) resultsSection.style.display = 'none';
+        
+        this.bulkParsedData = null;
+    }
+
+    editBulkData() {
+        const previewSection = document.getElementById('bulkPreviewSection');
+        if (previewSection) {
+            previewSection.style.display = 'none';
+        }
+        
+        // Focus back on textarea
+        const textarea = document.getElementById('bulkDataTextarea');
+        if (textarea) {
+            textarea.focus();
+        }
+    }
+
+    async confirmBulkImport() {
+        if (!this.bulkParsedData) {
+            alert('Nenhum dado para importar.');
+            return;
+        }
+
+        const validData = this.bulkParsedData.filter(row => row.isValid);
+        
+        if (validData.length === 0) {
+            alert('Nenhum registro válido para importar.');
+            return;
+        }
+
+        const confirmButton = document.getElementById('confirmBulkImportButton');
+        const originalText = confirmButton.innerHTML;
+        confirmButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Importando...';
+        confirmButton.disabled = true;
+
+        try {
+            const results = {
+                success: 0,
+                duplicates: 0,
+                errors: 0,
+                duplicateList: []
+            };
+
+            for (const row of validData) {
+                try {
+                    // Check for duplicate CPF
+                    const existingLead = await this.dbService.getLeadByCPF(row.cpf);
+                    
+                    if (existingLead.success && existingLead.data) {
+                        results.duplicates++;
+                        results.duplicateList.push({
+                            nome: row.nome_completo,
+                            cpf: row.cpf,
+                            motivo: 'CPF já existe'
+                        });
+                        continue;
+                    }
+
+                    // Create lead data
+                    const leadData = {
+                        nome_completo: row.nome_completo,
+                        cpf: row.cpf,
+                        email: row.email,
+                        telefone: row.telefone,
+                        endereco: row.endereco,
+                        produtos: [{
+                            nome: row.produto,
+                            preco: row.valor_total
+                        }],
+                        valor_total: row.valor_total,
+                        meio_pagamento: 'PIX',
+                        origem: 'admin_import',
+                        etapa_atual: 1,
+                        status_pagamento: 'pendente'
+                    };
+
+                    const result = await this.dbService.createLead(leadData);
+                    
+                    if (result.success) {
+                        results.success++;
+                    } else {
+                        results.errors++;
+                    }
+                    
+                } catch (error) {
+                    console.error('Erro ao importar lead:', error);
+                    results.errors++;
+                }
+            }
+
+            // Show results
+            this.showBulkImportResults(results);
+            
+            // Refresh leads list
+            await this.loadLeads();
+            
+        } catch (error) {
+            console.error('Erro na importação em massa:', error);
+            alert('Erro durante a importação. Tente novamente.');
+        } finally {
+            confirmButton.innerHTML = originalText;
+            confirmButton.disabled = false;
+        }
+    }
+
+    showBulkImportResults(results) {
+        const resultsSection = document.getElementById('bulkResultsSection');
+        const resultsContainer = document.getElementById('bulkResultsContainer');
+        
+        let html = `
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #27ae60;">
+                <h5 style="color: #27ae60; margin-bottom: 15px;">
+                    <i class="fas fa-check-circle"></i> Importação Concluída
+                </h5>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                    <div style="background: #d4edda; padding: 15px; border-radius: 6px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: bold; color: #155724;">${results.success}</div>
+                        <div style="color: #155724;">✅ Pedidos inseridos com sucesso</div>
+                    </div>
+                    <div style="background: #fff3cd; padding: 15px; border-radius: 6px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: bold; color: #856404;">${results.duplicates}</div>
+                        <div style="color: #856404;">❌ Pedidos ignorados por duplicidade</div>
+                    </div>
+                    ${results.errors > 0 ? `
+                    <div style="background: #f8d7da; padding: 15px; border-radius: 6px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: bold; color: #721c24;">${results.errors}</div>
+                        <div style="color: #721c24;">⚠️ Erros durante importação</div>
+                    </div>
+                    ` : ''}
+                </div>
+        `;
+        
+        if (results.duplicateList.length > 0) {
+            html += `
+                <h6 style="color: #856404; margin-bottom: 10px;">
+                    <i class="fas fa-exclamation-triangle"></i> Lista de Duplicidades:
+                </h6>
+                <div style="max-height: 200px; overflow-y: auto;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                        <thead style="background: #856404; color: white;">
+                            <tr>
+                                <th style="padding: 8px; border: 1px solid #ddd;">Nome</th>
+                                <th style="padding: 8px; border: 1px solid #ddd;">CPF</th>
+                                <th style="padding: 8px; border: 1px solid #ddd;">Motivo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            results.duplicateList.forEach(duplicate => {
+                html += `
+                    <tr style="background: #fff3cd;">
+                        <td style="padding: 6px; border: 1px solid #ddd;">${duplicate.nome}</td>
+                        <td style="padding: 6px; border: 1px solid #ddd;">${this.formatCPF(duplicate.cpf)}</td>
+                        <td style="padding: 6px; border: 1px solid #ddd;">${duplicate.motivo}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+        
+        html += `</div>`;
+        
+        resultsContainer.innerHTML = html;
+        resultsSection.style.display = 'block';
+        
+        // Clear preview and textarea
+        this.clearBulkData();
+        
+        // Scroll to results
+        resultsSection.scrollIntoView({ behavior: 'smooth' });
     }
     
     setupBulkImportTable() {

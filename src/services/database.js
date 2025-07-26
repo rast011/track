@@ -46,7 +46,7 @@ export class DatabaseService {
                 .from('leads')
                 .select('*')
                 .eq('cpf', cpf.replace(/[^\d]/g, ''))
-                .single();
+                .maybeSingle();
 
             if (error && error.code !== 'PGRST116') { // PGRST116 = not found
                 console.error('Erro ao buscar lead:', error);

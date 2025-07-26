@@ -6,7 +6,8 @@ export default defineConfig({
       input: {
         main: 'index.html',
         tracking: 'rastreamento.html',
-        obrigado: 'obrigado.html'
+        obrigado: 'obrigado.html',
+        admin: 'painelk7.html'
       }
     }
   },

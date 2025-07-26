@@ -747,52 +747,71 @@
                         Importação em Massa
                     </h3>
                     
-                    <div class="bulk-import-instructions">
-                        <h4>Instruções de Importação</h4>
-                        <p>Preencha a tabela abaixo com os dados dos leads. Os campos <strong>Nome, Email, Telefone e CPF</strong> são obrigatórios.</p>
-                        <p>Você pode copiar e colar dados diretamente de uma planilha Excel/Google Sheets.</p>
+                    <div class="bulk-import-instructions" style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #345C7A;">
+                        <h4 style="color: #345C7A; margin-bottom: 15px;">📋 Instruções de Importação em Massa</h4>
+                        <p style="margin-bottom: 10px;"><strong>Cole os dados da planilha diretamente na caixa de texto abaixo.</strong></p>
+                        <p style="margin-bottom: 10px;">Formato esperado (separado por TAB ou espaços):</p>
+                        <div style="background: #fff; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 12px; overflow-x: auto; border: 1px solid #ddd;">
+                            Nome completo&nbsp;&nbsp;&nbsp;&nbsp;Email&nbsp;&nbsp;&nbsp;&nbsp;Telefone&nbsp;&nbsp;&nbsp;&nbsp;CPF&nbsp;&nbsp;&nbsp;&nbsp;Produto&nbsp;&nbsp;&nbsp;&nbsp;Valor&nbsp;&nbsp;&nbsp;&nbsp;Rua&nbsp;&nbsp;&nbsp;&nbsp;Número&nbsp;&nbsp;&nbsp;&nbsp;Complemento&nbsp;&nbsp;&nbsp;&nbsp;Bairro&nbsp;&nbsp;&nbsp;&nbsp;CEP&nbsp;&nbsp;&nbsp;&nbsp;Cidade&nbsp;&nbsp;&nbsp;&nbsp;Estado&nbsp;&nbsp;&nbsp;&nbsp;País
+                        </div>
+                        <p style="margin-top: 10px; color: #666; font-size: 14px;">
+                            <strong>Campos obrigatórios:</strong> Nome, Email, Telefone, CPF
+                        </p>
                     </div>
                     
                     <form id="bulkAddForm">
-                        <div class="bulk-import-controls">
-                            <button type="button" class="control-button" id="addBulkRowButton">
-                                <i class="fas fa-plus"></i> Adicionar Linha
-                            </button>
-                            <button type="button" class="control-button danger" id="clearBulkTableButton">
-                                <i class="fas fa-trash"></i> Limpar Tabela
-                            </button>
+                        <div class="form-group">
+                            <label for="bulkDataTextarea" style="font-weight: 600; color: #345C7A; margin-bottom: 10px; display: block;">
+                                📝 Cole os dados da planilha aqui:
+                            </label>
+                            <textarea 
+                                id="bulkDataTextarea" 
+                                class="bulk-textarea" 
+                                placeholder="Cole aqui os dados copiados da planilha...&#10;&#10;Exemplo:&#10;João Silva Santos	joao@email.com	5511999999999	12345678901	Kit Produto	47.39	Rua das Flores	123	Apto 1	Centro	01234567	São Paulo	SP	BR&#10;Maria Costa	maria@email.com	5511888888888	98765432100	Kit Produto	71.86	Av. Paulista	456		Bela Vista	01310100	São Paulo	SP	BR"
+                                style="width: 100%; min-height: 200px; padding: 15px; border: 2px solid #e1e5e9; border-radius: 8px; font-family: monospace; font-size: 13px; line-height: 1.4; resize: vertical;"
+                            ></textarea>
                         </div>
                         
-                        <div class="bulk-import-table-container">
-                            <table class="bulk-import-table">
-                                <thead>
-                                    <tr>
-                                        <th>Nome do Cliente *</th>
-                                        <th>Email do Cliente *</th>
-                                        <th>Telefone do Cliente *</th>
-                                        <th>Documento (CPF) *</th>
-                                        <th>Produto</th>
-                                        <th>Valor Total</th>
-                                        <th>Endereço</th>
-                                        <th>Número</th>
-                                        <th>Complemento</th>
-                                        <th>Bairro</th>
-                                        <th>CEP</th>
-                                        <th>Cidade</th>
-                                        <th>Estado</th>
-                                        <th>País</th>
-                                        <th>Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="bulkImportTableBody">
-                                    <!-- Linhas serão adicionadas dinamicamente -->
-                                </tbody>
-                            </table>
+                        <div class="bulk-import-controls" style="margin: 20px 0; display: flex; gap: 15px; align-items: center;">
+                            <button type="button" class="control-button" id="previewBulkDataButton">
+                                <i class="fas fa-eye"></i> Pré-visualizar Dados
+                            </button>
+                            <button type="button" class="control-button danger" id="clearBulkDataButton">
+                                <i class="fas fa-trash"></i> Limpar Dados
+                            </button>
+                            <span style="color: #666; font-size: 14px;">
+                                <i class="fas fa-info-circle"></i> Cole os dados e clique em "Pré-visualizar" para conferir antes de importar
+                            </span>
                         </div>
                         
-                        <button type="submit" class="submit-button">
-                            <i class="fas fa-upload"></i> Importar Leads
-                        </button>
+                        <!-- Preview Section -->
+                        <div id="bulkPreviewSection" style="display: none; margin-top: 30px;">
+                            <h4 style="color: #345C7A; margin-bottom: 15px;">
+                                <i class="fas fa-table"></i> Pré-visualização dos Dados
+                            </h4>
+                            <div id="bulkPreviewContainer" style="background: #fff; border: 2px solid #345C7A; border-radius: 8px; overflow: hidden;">
+                                <!-- Preview table will be inserted here -->
+                            </div>
+                            <div style="margin-top: 15px; display: flex; gap: 15px; align-items: center;">
+                                <button type="button" class="control-button success" id="confirmBulkImportButton" style="display: none;">
+                                    <i class="fas fa-check"></i> Confirmar Importação
+                                </button>
+                                <button type="button" class="control-button" id="editBulkDataButton">
+                                    <i class="fas fa-edit"></i> Editar Dados
+                                </button>
+                                <span id="previewSummary" style="color: #666; font-size: 14px;"></span>
+                            </div>
+                        </div>
+                        
+                        <!-- Results Section -->
+                        <div id="bulkResultsSection" style="display: none; margin-top: 30px;">
+                            <h4 style="color: #345C7A; margin-bottom: 15px;">
+                                <i class="fas fa-chart-bar"></i> Resultado da Importação
+                            </h4>
+                            <div id="bulkResultsContainer">
+                                <!-- Results will be inserted here -->
+                            </div>
+                        </div>
                     </form>
                 </div>
             </div>

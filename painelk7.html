@@ -606,15 +606,26 @@
             <i class="fas fa-dove"></i>
         </div>
 <div class="login-form">
-    <h2 class="login-title">Painel Administrativo</h2>
-    <form id="loginForm">
-        <!-- Campo de senha removido -->
-        <button type="submit" class="login-button">
-            <i class="fas fa-sign-in-alt"></i> Acessar Painel
-        </button>
-        <div class="error-message" id="errorMessage" style="display: none;"></div>
-    </form>
+  <h2 class="login-title">Painel Administrativo</h2>
+  <form id="loginForm">
+    <!-- Campo de senha removido -->
+
+    <button type="submit" class="login-button">
+      <i class="fas fa-sign-in-alt"></i> Acessar Painel
+    </button>
+    <div class="error-message" id="errorMessage" style="display: none;"></div>
+  </form>
 </div>
+
+<script>
+  document.getElementById('loginForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Redirecionamento direto sem senha
+    window.location.href = "/painel"; // Substitua "/painel" pelo link real se for diferente
+  });
+</script>
+
 
 <script>
     document.getElementById("loginForm").addEventListener("submit", function (event) {

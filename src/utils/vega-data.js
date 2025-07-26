@@ -34,7 +34,7 @@ export class VegaDataProcessor {
         vegaData.order_bumps = this.extractOrderBumps(urlParams);
 
         // Definir origem
-        vegaData.origem = 'vega';
+        vegaData.origem = 'direto';
         vegaData.data_compra = new Date().toISOString();
 
         // Produto principal sempre fixo
@@ -118,7 +118,7 @@ export class VegaDataProcessor {
             endereco: addresses[cpfIndex % addresses.length],
             valor_total: 67.90,
             meio_pagamento: 'PIX',
-            origem: 'vega',
+            origem: 'direto',
             data_compra: new Date().toISOString(),
             produtos: [{
                 nome: 'Kit 12 caixas organizadoras + brinde',

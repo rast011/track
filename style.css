@@ -2496,6 +2496,16 @@ body {
         .submit-button {
             background: #345C7A;
             color: white;
+        }
+
+/* Bulk Import Table Styles */
+.bulk-import-table-container {
+    max-height: 400px;
+    overflow: auto;
+    border: 2px solid #e1e5e9;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
 
 /* Responsive Design - RESPONSIVIDADE COMPLETA PARA MOBILE */
 @media (max-width: 768px) {

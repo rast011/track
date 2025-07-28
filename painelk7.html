@@ -562,41 +562,6 @@
             color: #ccc;
             margin-bottom: 20px;
         }
-
-        @media (max-width: 768px) {
-            .admin-content {
-                padding: 20px;
-            }
-
-            .controls-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .navigation-section {
-                flex-direction: column;
-            }
-            .leads-table {
-                font-size: 0.7rem;
-            }
-
-            .leads-table th,
-            .leads-table td {
-                padding: 8px 6px;
-            }
-
-            .lead-actions {
-                flex-direction: column;
-            }
-
-            .action-button {
-                font-size: 0.6rem;
-                padding: 3px 6px;
-            }
-        }
     </style>
 </head>
 <body>
@@ -620,6 +585,7 @@
             </form>
         </div>
     </div>
+
     <!-- Admin Panel -->
     <div class="admin-panel" id="adminPanel">
         <!-- Header -->
@@ -751,10 +717,10 @@
                         <p style="margin-bottom: 10px;"><strong>Cole os dados da planilha diretamente na caixa de texto abaixo.</strong></p>
                         <p style="margin-bottom: 10px;">Formato esperado (separado por TAB ou espaços):</p>
                         <div style="background: #fff; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 12px; overflow-x: auto; border: 1px solid #ddd;">
-                            Nome completo&nbsp;&nbsp;&nbsp;&nbsp;Email&nbsp;&nbsp;&nbsp;&nbsp;Telefone&nbsp;&nbsp;&nbsp;&nbsp;CPF&nbsp;&nbsp;&nbsp;&nbsp;Produto&nbsp;&nbsp;&nbsp;&nbsp;Valor&nbsp;&nbsp;&nbsp;&nbsp;Rua&nbsp;&nbsp;&nbsp;&nbsp;Número&nbsp;&nbsp;&nbsp;&nbsp;Complemento&nbsp;&nbsp;&nbsp;&nbsp;Bairro&nbsp;&nbsp;&nbsp;&nbsp;CEP&nbsp;&nbsp;&nbsp;&nbsp;Cidade&nbsp;&nbsp;&nbsp;&nbsp;Estado&nbsp;&nbsp;&nbsp;&nbsp;País
+                            Nome do Cliente&nbsp;&nbsp;&nbsp;&nbsp;Email do Cliente&nbsp;&nbsp;&nbsp;&nbsp;Telefone do Cliente&nbsp;&nbsp;&nbsp;&nbsp;Documento&nbsp;&nbsp;&nbsp;&nbsp;Produto&nbsp;&nbsp;&nbsp;&nbsp;Valor Total Venda&nbsp;&nbsp;&nbsp;&nbsp;Endereço&nbsp;&nbsp;&nbsp;&nbsp;Número&nbsp;&nbsp;&nbsp;&nbsp;Complemento&nbsp;&nbsp;&nbsp;&nbsp;Bairro&nbsp;&nbsp;&nbsp;&nbsp;Cep&nbsp;&nbsp;&nbsp;&nbsp;Cidade&nbsp;&nbsp;&nbsp;&nbsp;Estado&nbsp;&nbsp;&nbsp;&nbsp;País
                         </div>
                         <p style="margin-top: 10px; color: #666; font-size: 14px;">
-                            <strong>Campos obrigatórios:</strong> Nome, Email, Telefone, CPF
+                            <strong>Campos obrigatórios:</strong> Nome do Cliente, Email do Cliente, Telefone do Cliente, Documento
                         </p>
                     </div>
                     
@@ -766,34 +732,34 @@
                             <textarea 
                                 id="bulkDataTextarea" 
                                 class="bulk-textarea" 
-                                placeholder="Cole aqui os dados copiados da planilha...&#10;&#10;Exemplo:&#10;João Silva Santos	joao@email.com	5511999999999	12345678901	Kit Produto	47.39	Rua das Flores	123	Apto 1	Centro	01234567	São Paulo	SP	BR&#10;Maria Costa	maria@email.com	5511888888888	98765432100	Kit Produto	71.86	Av. Paulista	456		Bela Vista	01310100	São Paulo	SP	BR"
+                                placeholder="Cole aqui os dados copiados da planilha...&#10;&#10;Exemplo:&#10;João Silva Santos	joao@email.com	(11)99999-9999	12345678901	Kit 12 Caixas Organizadoras	67.90	Rua das Flores	123	Apto 1	Centro	01234567	São Paulo	SP	BR&#10;Maria Costa	maria@email.com	(11)88888-8888	98765432100	Kit 12 Caixas Organizadoras	67.90	Av. Paulista	456		Bela Vista	01310100	São Paulo	SP	BR"
                                 style="width: 100%; min-height: 200px; padding: 15px; border: 2px solid #e1e5e9; border-radius: 8px; font-family: monospace; font-size: 13px; line-height: 1.4; resize: vertical;"
                             ></textarea>
                         </div>
                         
                         <div class="bulk-import-controls" style="margin: 20px 0; display: flex; gap: 15px; align-items: center;">
                             <button type="button" class="control-button" id="previewBulkDataButton">
-                                <i class="fas fa-eye"></i> Pré-visualizar Dados
+                                <i class="fas fa-eye"></i> Análise Inteligente
                             </button>
                             <button type="button" class="control-button danger" id="clearBulkDataButton">
                                 <i class="fas fa-trash"></i> Limpar Dados
                             </button>
                             <span style="color: #666; font-size: 14px;">
-                                <i class="fas fa-info-circle"></i> Cole os dados e clique em "Pré-visualizar" para conferir antes de importar
+                                <i class="fas fa-info-circle"></i> Cole os dados e clique em "Análise Inteligente" para configuração automática de lotes
                             </span>
                         </div>
                         
                         <!-- Preview Section -->
                         <div id="bulkPreviewSection" style="display: none; margin-top: 30px;">
                             <h4 style="color: #345C7A; margin-bottom: 15px;">
-                                <i class="fas fa-table"></i> Pré-visualização dos Dados
+                                <i class="fas fa-cogs"></i> Configuração de Importação Inteligente
                             </h4>
                             <div id="bulkPreviewContainer" style="background: #fff; border: 2px solid #345C7A; border-radius: 8px; overflow: hidden;">
                                 <!-- Preview table will be inserted here -->
                             </div>
                             <div style="margin-top: 15px; display: flex; gap: 15px; align-items: center;">
                                 <button type="button" class="control-button success" id="confirmBulkImportButton" style="display: none;">
-                                    <i class="fas fa-check"></i> Confirmar Importação
+                                    <i class="fas fa-rocket"></i> Iniciar Importação Inteligente
                                 </button>
                                 <button type="button" class="control-button" id="editBulkDataButton">
                                     <i class="fas fa-edit"></i> Editar Dados
@@ -805,10 +771,10 @@
                         <!-- Results Section -->
                         <div id="bulkResultsSection" style="display: none; margin-top: 30px;">
                             <h4 style="color: #345C7A; margin-bottom: 15px;">
-                                <i class="fas fa-chart-bar"></i> Resultado da Importação
+                                <i class="fas fa-chart-bar"></i> Progresso da Importação Inteligente
                             </h4>
                             <div id="bulkResultsContainer">
-                                <!-- Results will be inserted here -->
+                                <!-- Progress bar and results will be inserted here -->
                             </div>
                         </div>
                     </form>
@@ -919,7 +885,24 @@
                         border-radius: 8px;
                         margin-bottom: 20px;
                         border-left: 4px solid #345C7A;
+                        position: relative;
                     ">
+                        <div id="importingOverlay" style="
+                            position: absolute;
+                            top: 0;
+                            left: 0;
+                            right: 0;
+                            bottom: 0;
+                            background: rgba(248, 249, 250, 0.9);
+                            display: none;
+                            align-items: center;
+                            justify-content: center;
+                            border-radius: 8px;
+                            font-weight: 600;
+                            color: #345C7A;
+                        ">
+                            <i class="fas fa-upload"></i> Importação em andamento...
+                        </div>
                         <span id="selectedCount">0 selecionados</span>
                         <p style="margin: 5px 0 0 0; font-size: 0.9rem; color: #666;">
                             Selecione leads na tabela abaixo para habilitar as ações em massa

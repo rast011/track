@@ -600,12 +600,26 @@
     </style>
 </head>
 <body>
- Laryssa Barreto Alves	lary.b.alves@gmail.com	5521964639100	14417943796	Kit 262 Cores Canetinhas Coloridas Edição Especial Com Ponta Dupla 	47,39	Estrada do Engenho da Pedra	1640		Olaria	21031485	Rio de Janeiro	RJ	BR
-ERIK COSTA ROBIM	erikcosta333@gmail.com	5519994168317	49180618855	Kit 262 Cores Canetinhas Coloridas Edição Especial Com Ponta Dupla 	71,86	Antônio guiraldo	114	Casa	Jardim regente	13336354	Indaiatuba	SP	BR
-Giovanna Letícia Leite Medeiros	gigileleticia@gmail.com	5555998751241	12486776419	Kit 262 Cores Canetinhas Coloridas Edição Especial Com Ponta Dupla 	47,39	Avenida Benedito Santana	45	Nas farmácias Univida	Amarante	59296515	São Gonçalo do Amarante	RN	BR
-Isabela Canestraro	canestraro.isa@gmail.com	5541998821265	13411980907	Kit 262 Cores Canetinhas Coloridas Edição Especial Com Ponta Dupla 	47,39	Rua David Tows	890	Bloco 13 ap 104	Xaxim	81830270	Curitiba	PR	BR
-Victor Carvalho diogenes	victordiogenes43@gmail.com	5584981515842	70069949425	Kit 262 Cores Canetinhas Coloridas Edição Especial Com Ponta Dupla 	47,39	Rua Artur de Sousa Leite	161	Casa cinza por trás da madeireira beira rio	Aeroporto	59607740	Mossoró	RN	BR
-
+    <!-- Login Screen -->
+    <div class="login-container" id="loginScreen">
+        <div class="login-logo">
+            <i class="fas fa-dove"></i>
+        </div>
+        
+        <div class="login-form">
+            <h2 class="login-title">Painel Administrativo</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="passwordInput">Senha de Acesso</label>
+                    <input type="password" id="passwordInput" placeholder="Digite a senha" required>
+                </div>
+                <button type="submit" class="login-button">
+                    <i class="fas fa-sign-in-alt"></i> Acessar Painel
+                </button>
+                <div class="error-message" id="errorMessage" style="display: none;"></div>
+            </form>
+        </div>
+    </div>
     <!-- Admin Panel -->
     <div class="admin-panel" id="adminPanel">
         <!-- Header -->
